@@ -1,0 +1,23 @@
+.work {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.warn-line { color: var(--red); font-weight: 650; margin-top: 0; }
+.result {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+.result.ok { background: var(--green-soft); color: var(--green); }
+.result.err { background: var(--red-soft); color: var(--red); }
+@media (max-width: 900px) {
+  .work, .row { grid-template-columns: 1fr; }
+}

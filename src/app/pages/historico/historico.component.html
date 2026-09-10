@@ -1,0 +1,136 @@
+<section>
+  <div class="page-head">
+    <div>
+      <h1>Histórico</h1>
+      <p>Quem recebeu, de qual número saiu, status e horário de cada mensagem.</p>
+    </div>
+    <div class="head-stats">
+      <div class="stat">
+        <b>{{ total }}</b>
+        <span>Total de registros</span>
+      </div>
+    </div>
+  </div>
+
+  <form class="filters card" (ngSubmit)="search(1)">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>De</mat-label>
+      <input matInput type="date" [(ngModel)]="de" name="de">
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Até</mat-label>
+      <input matInput type="date" [(ngModel)]="ate" name="ate">
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Status</mat-label>
+      <mat-select [(ngModel)]="status" name="status">
+        @for (s of statusOptions; track s.value) {
+          <mat-option [value]="s.value">{{ s.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Instância</mat-label>
+      <input matInput [(ngModel)]="instancia" name="instancia" placeholder="meu-whatsapp">
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="grow" subscriptSizing="dynamic">
+      <mat-label>Telefone</mat-label>
+      <input matInput [(ngModel)]="telefone" name="telefone">
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="grow" subscriptSizing="dynamic">
+      <mat-label>Nome</mat-label>
+      <input matInput [(ngModel)]="nome" name="nome">
+    </mat-form-field>
+    <div class="filter-btns">
+      <button type="submit" mat-flat-button class="cta">Filtrar</button>
+      <button type="button" mat-stroked-button (click)="limpar()">Limpar</button>
+    </div>
+  </form>
+
+  <div class="layout">
+    <div class="card table-card">
+      @if (carregando) {
+        <div class="empty"><span class="material-symbols-outlined spin">progress_activity</span> Carregando...</div>
+      } @else if (rows.length === 0) {
+        <div class="empty">Nenhum envio encontrado para esses filtros.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Origem</th>
+                <th>Tipo</th>
+                <th>Template</th>
+                <th>Mensagem</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.id) {
+                <tr
+                  [class.ok]="row.status === 'ENVIADO'"
+                  [class.err]="row.status === 'ERRO'"
+                  [class.sel]="selected?.id === row.id"
+                  (click)="selected = row"
+                >
+                  <td>{{ when(row) }}</td>
+                  <td>{{ row.nome || '—' }}</td>
+                  <td class="tel">{{ row.telefone }}</td>
+                  <td>{{ row.numero_origem || row.instancia || '—' }}</td>
+                  <td>{{ tipo(row.tipo) }}</td>
+                  <td>{{ row.template_nome || '—' }}</td>
+                  <td class="msg" [title]="row.mensagem">{{ row.mensagem }}</td>
+                  <td>
+                    <span class="badge" [class]="statusBadge(row.status)">{{ statusText(row.status) }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="paginator">
+          <mat-form-field appearance="outline" class="per-page">
+            <mat-label>Página</mat-label>
+            <mat-select [value]="perPage" (valueChange)="perPage = $event; search(1)">
+              @for (n of perPageOptions; track n) {
+                <mat-option [value]="n">{{ n }} / página</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-stroked-button [disabled]="page <= 1 || carregando" (click)="mudarPagina(page - 1)">Anterior</button>
+          <span class="muted">Página {{ page }} de {{ totalPaginas() }} · {{ total }} no total</span>
+          <button mat-stroked-button [disabled]="page >= totalPaginas() || carregando" (click)="mudarPagina(page + 1)">Próxima</button>
+        </div>
+      }
+    </div>
+
+    @if (selected) {
+      <aside class="card detail">
+        <h3>Detalhes do envio #{{ selected.id }}</h3>
+        <p><span>Nome</span>{{ selected.nome || '—' }}</p>
+        <p><span>Telefone</span>{{ selected.telefone }}</p>
+        <p><span>Número origem</span>{{ selected.numero_origem || selected.instancia || '—' }}</p>
+        <p><span>Instância</span>{{ selected.instancia || '—' }}</p>
+        <p><span>Tipo</span>{{ tipo(selected.tipo) }}</p>
+        <p><span>Grupo import.</span>{{ selected.grupo_importacao_id ?? '—' }}</p>
+        <p><span>Template</span>{{ selected.template_nome || '—' }}</p>
+        <p>
+          <span>Status</span>
+          <span class="badge inline" [class]="statusBadge(selected.status)">{{ statusText(selected.status) }}</span>
+        </p>
+        <p><span>Criado em</span>{{ when(selected) }}</p>
+        @if (selected.enviado_em) {
+          <p><span>Enviado em</span>{{ when(selected) }}</p>
+        }
+        @if (selected.erro) {
+          <p class="erro"><span>Erro</span>{{ selected.erro }}</p>
+        }
+        <div class="preview"><strong>Mensagem</strong><pre>{{ selected.mensagem }}</pre></div>
+      </aside>
+    }
+  </div>
+</section>

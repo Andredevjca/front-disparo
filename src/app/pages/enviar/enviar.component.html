@@ -1,0 +1,60 @@
+<section class="enviar">
+  <div class="page-head">
+    <div>
+      <h1>Enviar</h1>
+      <p>Número, template, conferir a mensagem e disparar.</p>
+    </div>
+  </div>
+  <div class="work">
+    <form class="card" (ngSubmit)="send()">
+      @if (!wa.conectadas().length) {
+        <p class="warn-line">Nenhuma conta conectada. Vá em WhatsApp e conecte um número.</p>
+      }
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>Enviar de</mat-label>
+          <mat-select [(ngModel)]="instance" name="instance" required>
+            @for (account of wa.conectadas(); track account.instance) {
+              <mat-option [value]="account.instance">{{ account.number || account.instance }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Telefone</mat-label>
+          <input matInput [(ngModel)]="telefone" name="telefone" required placeholder="85999999999">
+        </mat-form-field>
+      </div>
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input matInput [(ngModel)]="nome" name="nome" placeholder="Quem vai receber">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Template</mat-label>
+          <mat-select [(ngModel)]="templateId" name="templateId" (selectionChange)="onTemplate()">
+            @for (item of templates; track item.id) {
+              <mat-option [value]="item.id">{{ item.nome }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline">
+        <mat-label>Mensagem</mat-label>
+        <textarea matInput rows="8" [(ngModel)]="mensagem" name="mensagem" required></textarea>
+      </mat-form-field>
+      <button mat-flat-button class="cta" [disabled]="loading || !instance">{{ loading ? 'Enviando...' : 'Enviar mensagem' }}</button>
+    </form>
+    <aside class="card side">
+      <div class="preview">
+        <strong>Mensagem final</strong>
+        <pre>{{ finalMessage() }}</pre>
+      </div>
+      @if (result) {
+        <div class="result" [class.ok]="result.status === 'ENVIADO'" [class.err]="result.status !== 'ENVIADO'">
+          @if (result.status === 'ENVIADO') { Enviado com sucesso para {{ result.telefone }} }
+          @else { Erro no envio{{ result.erro ? ': ' + result.erro : '' }} }
+        </div>
+      }
+    </aside>
+  </div>
+</section>

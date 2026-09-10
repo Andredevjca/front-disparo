@@ -1,0 +1,76 @@
+<app-loading />
+<ngx-sonner-toaster
+  [position]="'top-right'"
+  [duration]="4000"
+  [richColors]="true"
+  [closeButton]="true"
+/>
+<div class="shell" [class.open]="menuOpen" [class.collapsed]="collapsed">
+  <div class="scrim" (click)="menuOpen = false"></div>
+  <aside class="nav">
+    <div class="brand">
+      <span class="logo">WA</span>
+      <div class="brand-text">
+        <strong>Disparo</strong>
+        <small>WhatsApp</small>
+      </div>
+    </div>
+    <p class="group">Enviar</p>
+    <nav (click)="menuOpen = false">
+      <a routerLink="/enviar" routerLinkActive="active" title="Enviar">
+        <span class="material-symbols-outlined">chat</span><span class="lbl">Enviar</span>
+      </a>
+      <a routerLink="/massa" routerLinkActive="active" title="Enviar em Massa">
+        <span class="material-symbols-outlined">upload_file</span><span class="lbl">Enviar em Massa</span>
+      </a>
+    </nav>
+    <p class="group">Preparar</p>
+    <nav (click)="menuOpen = false">
+      <a routerLink="/templates" routerLinkActive="active" title="Templates">
+        <span class="material-symbols-outlined">notes</span><span class="lbl">Templates</span>
+      </a>
+      <a routerLink="/usuarios" routerLinkActive="active" title="Usuários">
+        <span class="material-symbols-outlined">group</span><span class="lbl">Usuários</span>
+      </a>
+      <a routerLink="/whatsapp" routerLinkActive="active" title="WhatsApp">
+        <span class="material-symbols-outlined">qr_code_2</span><span class="lbl">WhatsApp</span>
+      </a>
+      <a routerLink="/historico" routerLinkActive="active" title="Histórico">
+        <span class="material-symbols-outlined">history</span><span class="lbl">Histórico</span>
+      </a>
+    </nav>
+    <div class="nav-foot">
+      <small class="email-lbl">{{ auth.email() }}</small>
+      <button mat-button class="sair" (click)="auth.logout()" title="Sair">
+        <span class="material-symbols-outlined">logout</span><span class="lbl">Sair</span>
+      </button>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button mat-icon-button class="menu mobile" type="button" (click)="menuOpen = !menuOpen" aria-label="Menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <button mat-icon-button class="menu collapse" type="button" (click)="toggleCollapse()" [attr.aria-label]="collapsed ? 'Expandir menu' : 'Recolher menu'">
+        @if (collapsed) {
+          <span class="material-symbols-outlined">menu_open</span>
+        } @else {
+          <span class="material-symbols-outlined">chevron_left</span>
+        }
+      </button>
+      <div class="status" [class]="tone()">
+        <span class="bulb"></span>
+        <div>
+          <b>WhatsApp {{ label() }}</b>
+          @if (numbers()) {
+            <small>{{ numbers() }}</small>
+          }
+        </div>
+      </div>
+      <app-whatsapp-status-badge />
+    </header>
+    <section class="content">
+      <router-outlet />
+    </section>
+  </div>
+</div>

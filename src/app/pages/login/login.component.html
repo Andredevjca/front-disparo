@@ -1,0 +1,49 @@
+<div class="login">
+  <div class="panel">
+    <div class="intro">
+      <span class="logo">WA</span>
+      <h1>Disparo WhatsApp</h1>
+      <p>Conecte, escolha um template e envie. Sem dashboard — só o envio.</p>
+    </div>
+
+    @if (showSeed) {
+      <form (ngSubmit)="criarPrimeiraConta()" class="seed-form">
+        <h2>Criar primeira conta</h2>
+        <p class="sub">Funciona apenas quando nenhum usuário existe no banco.</p>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Nome (opcional)</mat-label>
+          <input matInput [(ngModel)]="seedNome" name="seedNome">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>E-mail</mat-label>
+          <input matInput [(ngModel)]="seedEmail" name="seedEmail" type="email" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Senha</mat-label>
+          <input matInput [(ngModel)]="seedPassword" name="seedPassword" type="password" required>
+        </mat-form-field>
+        @if (seedError) { <div class="erro">{{ seedError }}</div> }
+        @if (seedSuccess) { <div class="ok">{{ seedSuccess }}</div> }
+        <button mat-flat-button class="full cta" [disabled]="seedLoading">{{ seedLoading ? 'Criando...' : 'Criar conta' }}</button>
+        <button mat-button class="full" type="button" (click)="toggleSeed()">Voltar para o login</button>
+      </form>
+    } @else {
+      <form (ngSubmit)="submit()">
+        <h2>Entrar</h2>
+        <p class="sub">Acesso administrativo</p>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>E-mail</mat-label>
+          <input matInput [(ngModel)]="email" name="email" type="email" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Senha</mat-label>
+          <input matInput [(ngModel)]="password" name="password" type="password" required>
+        </mat-form-field>
+        @if (error) { <div class="erro">{{ error }}</div> }
+        @if (seedSuccess) { <div class="ok">{{ seedSuccess }}</div> }
+        <button mat-flat-button class="full cta" [disabled]="loading">{{ loading ? 'Entrando...' : 'Entrar' }}</button>
+        <button mat-button class="full" type="button" (click)="toggleSeed()">Criar primeira conta admin</button>
+      </form>
+    }
+  </div>
+</div>
