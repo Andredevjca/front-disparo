@@ -1,6 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,12 +12,13 @@ import { DetalheEnvio } from '../../models/historico.model';
 
 @Component({
   selector: 'app-historico',
-  imports: [CommonModule, FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [CommonModule, FormsModule, NgbModalModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
   templateUrl: './historico.component.html',
   styleUrl: './historico.component.scss',
 })
 export class HistoricoComponent implements OnInit {
   private servicoHistorico = inject(ServicoHistorico);
+  private modalService = inject(NgbModal);
 
   registros: DetalheEnvio[] = [];
   pagina = 1;
@@ -77,6 +79,20 @@ export class HistoricoComponent implements OnInit {
     const max = this.totalPaginas();
     if (max && p > max) return;
     this.buscarRegistros(p);
+  }
+
+  abrirDetalhes(registro: DetalheEnvio, conteudo: TemplateRef<unknown>): void {
+    this.registroSelecionado = registro;
+    this.modalService.open(conteudo, {
+      ariaLabelledBy: 'modal-detalhes-envio-titulo',
+      centered: true,
+      scrollable: true,
+      size: 'lg',
+      windowClass: 'historico-modal',
+      backdropClass: 'historico-modal-backdrop',
+    }).result.finally(() => {
+      this.registroSelecionado = null;
+    });
   }
 
   totalPaginas(): number {

@@ -47,8 +47,7 @@
     </div>
   </form>
 
-  <div class="layout">
-    <div class="card table-card">
+  <div class="card table-card">
       @if (carregando) {
         <div class="empty"><span class="material-symbols-outlined spin">progress_activity</span> Carregando...</div>
       } @else if (registros.length === 0) {
@@ -73,8 +72,7 @@
                 <tr
                   [class.ok]="registro.status === 'ENVIADO'"
                   [class.err]="registro.status === 'ERRO'"
-                  [class.sel]="registroSelecionado?.id === registro.id"
-                  (click)="registroSelecionado = registro"
+                  (click)="abrirDetalhes(registro, detalhesEnvio)"
                 >
                   <td>{{ formatarData(registro) }}</td>
                   <td>{{ registro.nome || '—' }}</td>
@@ -106,11 +104,15 @@
           <button mat-stroked-button [disabled]="pagina >= totalPaginas() || carregando" (click)="mudarPagina(pagina + 1)">Próxima</button>
         </div>
       }
-    </div>
+  </div>
 
+  <ng-template #detalhesEnvio let-modal>
     @if (registroSelecionado) {
-      <aside class="card detail">
-        <h3>Detalhes do envio #{{ registroSelecionado.id }}</h3>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-detalhes-envio-titulo">Detalhes do envio #{{ registroSelecionado.id }}</h2>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body detail">
         <p><span>Nome</span>{{ registroSelecionado.nome || '—' }}</p>
         <p><span>Telefone</span>{{ registroSelecionado.telefone }}</p>
         <p><span>Número origem</span>{{ registroSelecionado.numero_origem || registroSelecionado.instancia || '—' }}</p>
@@ -130,7 +132,10 @@
           <p class="erro"><span>Erro</span>{{ registroSelecionado.erro }}</p>
         }
         <div class="preview"><strong>Mensagem</strong><pre>{{ registroSelecionado.mensagem }}</pre></div>
-      </aside>
+      </div>
+      <div class="modal-footer">
+        <button type="button" mat-stroked-button (click)="modal.close()">Fechar</button>
+      </div>
     }
-  </div>
+  </ng-template>
 </section>
