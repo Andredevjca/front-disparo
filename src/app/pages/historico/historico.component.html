@@ -113,21 +113,23 @@
         <button type="button" class="btn-close" aria-label="Fechar" (click)="modal.dismiss()"></button>
       </div>
       <div class="modal-body detail">
-        <p><span>Nome</span>{{ registroSelecionado.nome || '—' }}</p>
-        <p><span>Telefone</span>{{ registroSelecionado.telefone }}</p>
-        <p><span>Número origem</span>{{ registroSelecionado.numero_origem || registroSelecionado.instancia || '—' }}</p>
-        <p><span>Instância</span>{{ registroSelecionado.instancia || '—' }}</p>
-        <p><span>Tipo</span>{{ tipo(registroSelecionado.tipo) }}</p>
-        <p><span>Grupo import.</span>{{ registroSelecionado.grupo_importacao_id ?? '—' }}</p>
-        <p><span>Template</span>{{ registroSelecionado.template_nome || '—' }}</p>
-        <p>
-          <span>Status</span>
-          <span class="badge inline" [class]="classeStatus(registroSelecionado.status)">{{ textoStatus(registroSelecionado.status) }}</span>
-        </p>
-        <p><span>Criado em</span>{{ formatarData(registroSelecionado) }}</p>
-        @if (registroSelecionado.enviado_em) {
-          <p><span>Enviado em</span>{{ formatarData(registroSelecionado) }}</p>
-        }
+        <div class="detail-grid">
+          <p><span>Nome</span>{{ registroSelecionado.nome || '—' }}</p>
+          <p><span>Telefone</span>{{ registroSelecionado.telefone }}</p>
+          <p><span>Número origem</span>{{ registroSelecionado.numero_origem || registroSelecionado.instancia || '—' }}</p>
+          <p><span>Instância</span>{{ registroSelecionado.instancia || '—' }}</p>
+          <p><span>Tipo</span>{{ tipo(registroSelecionado.tipo) }}</p>
+          <p><span>Grupo import.</span>{{ registroSelecionado.grupo_importacao_id ?? '—' }}</p>
+          <p><span>Template</span>{{ registroSelecionado.template_nome || '—' }}</p>
+          <p>
+            <span>Status</span>
+            <span class="badge inline" [class]="classeStatus(registroSelecionado.status)">{{ textoStatus(registroSelecionado.status) }}</span>
+          </p>
+          <p><span>Criado em</span>{{ formatarData(registroSelecionado) }}</p>
+          @if (registroSelecionado.enviado_em) {
+            <p><span>Enviado em</span>{{ formatarData(registroSelecionado) }}</p>
+          }
+        </div>
         @if (registroSelecionado.erro) {
           <p class="erro"><span>Erro</span>{{ registroSelecionado.erro }}</p>
         }
