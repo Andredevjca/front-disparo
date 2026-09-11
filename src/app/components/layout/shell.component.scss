@@ -7,7 +7,7 @@ app-loading, ngx-sonner-toaster { display: contents; }
 .shell.collapsed .nav { padding: 20px 10px; }
 .brand { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; transition: gap 0.22s ease, margin-bottom 0.22s ease; }
 .shell.collapsed .brand { justify-content: center; gap: 0; margin-bottom: 20px; }
-.logo { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #25d366; color: #082013; font-weight: 800; flex: 0 0 auto; }
+.logo { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #25d366; color: #ffffff; font-weight: 800; flex: 0 0 auto; }
 .brand-text { display: flex; flex-direction: column; min-width: 0; opacity: 1; transition: opacity 0.18s ease; }
 .brand small { color: #9bb5a6; }
 .shell.collapsed .brand-text { opacity: 0; width: 0; overflow: hidden; }

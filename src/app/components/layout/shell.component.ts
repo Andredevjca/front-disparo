@@ -5,9 +5,8 @@ import { NgxSonnerToaster } from 'ngx-sonner';
 import { ServicoAutenticacao } from '../../services/autenticacao.service';
 import { ServicoStatusWhatsApp } from '../../services/status-whatsapp.service';
 import { LoadingComponent } from '../../shared/loading/loading.component';
-import { WhatsappStatusBadgeComponent } from '../../shared/whatsapp-status-badge/whatsapp-status-badge.component';
 
-@Component({ selector: 'app-shell', imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, NgxSonnerToaster, LoadingComponent, WhatsappStatusBadgeComponent], templateUrl: './shell.component.html', styleUrl: './shell.component.scss' })
+@Component({ selector: 'app-shell', imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, NgxSonnerToaster, LoadingComponent], templateUrl: './shell.component.html', styleUrl: './shell.component.scss' })
 export class ShellComponent implements OnInit, OnDestroy {
   readonly autenticacao = inject(ServicoAutenticacao); readonly whatsapp = inject(ServicoStatusWhatsApp); private readonly chaveMenu = 'disparo_nav_collapsed'; menuAberto = false; menuRecolhido = localStorage.getItem(this.chaveMenu) === '1'; menuUsuarioAberto = false;
   ngOnInit(): void { this.whatsapp.iniciar(); }
