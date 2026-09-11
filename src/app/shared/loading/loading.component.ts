@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { LoadingService } from '../../core/loading.service';
+import { ServicoCarregamento } from '../../services/carregamento.service';
 
 @Component({
   selector: 'app-loading',
   standalone: true,
   template: `
-    @if (loading.loading()) {
+    @if (servicoCarregamento.carregando()) {
       <div class="loading-overlay" aria-busy="true" aria-live="polite">
         <div class="spinner" role="progressbar" aria-label="Carregando"></div>
       </div>
@@ -40,5 +40,5 @@ import { LoadingService } from '../../core/loading.service';
   `],
 })
 export class LoadingComponent {
-  readonly loading = inject(LoadingService);
+  readonly servicoCarregamento = inject(ServicoCarregamento);
 }

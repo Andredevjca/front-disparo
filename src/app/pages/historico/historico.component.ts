@@ -6,8 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { ApiService } from '../../core/api.service';
-import { EnvioDetalhe } from '../../core/models';
+import { ServicoHistorico } from '../../services/historico.service';
+import { DetalheEnvio } from '../../models/historico.model';
 
 @Component({
   selector: 'app-historico',
@@ -16,12 +16,12 @@ import { EnvioDetalhe } from '../../core/models';
   styleUrl: './historico.component.scss',
 })
 export class HistoricoComponent implements OnInit {
-  private api = inject(ApiService);
+  private servicoHistorico = inject(ServicoHistorico);
 
-  rows: EnvioDetalhe[] = [];
-  page = 1;
-  perPage = 50;
-  total = 0;
+  registros: DetalheEnvio[] = [];
+  pagina = 1;
+  itensPorPagina = 50;
+  totalRegistros = 0;
 
   status = '';
   telefone = '';
@@ -29,10 +29,10 @@ export class HistoricoComponent implements OnInit {
   instancia = '';
   de = '';
   ate = '';
-  selected: EnvioDetalhe | null = null;
+  registroSelecionado: DetalheEnvio | null = null;
   carregando = false;
-  perPageOptions = [20, 50, 100, 200];
-  statusOptions = [
+  opcoesItensPorPagina = [20, 50, 100, 200];
+  opcoesStatus = [
     { value: '', label: 'Todos' },
     { value: 'ENVIADO', label: 'Enviado' },
     { value: 'ERRO', label: 'Erro' },
@@ -41,16 +41,16 @@ export class HistoricoComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.search();
+    this.buscarRegistros();
   }
 
-  search(pagina = 1): void {
-    this.page = pagina;
+  buscarRegistros(pagina = 1): void {
+    this.pagina = pagina;
     this.carregando = true;
-    this.api
-      .historico({
-        page: this.page,
-        perPage: this.perPage,
+    this.servicoHistorico
+      .listar({
+        page: this.pagina,
+        perPage: this.itensPorPagina,
         status: this.status,
         telefone: this.telefone,
         nome: this.nome,
@@ -59,11 +59,11 @@ export class HistoricoComponent implements OnInit {
         ate: this.ate,
       })
       .subscribe({
-        next: (res) => {
-          this.rows = res.rows;
-          this.page = res.page;
-          this.perPage = res.perPage;
-          this.total = res.total;
+        next: (resposta) => {
+          this.registros = resposta.rows;
+          this.pagina = resposta.page;
+          this.itensPorPagina = resposta.perPage;
+          this.totalRegistros = resposta.total;
           this.carregando = false;
         },
         error: () => {
@@ -76,22 +76,22 @@ export class HistoricoComponent implements OnInit {
     if (p < 1) return;
     const max = this.totalPaginas();
     if (max && p > max) return;
-    this.search(p);
+    this.buscarRegistros(p);
   }
 
   totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.total / this.perPage));
+    return Math.max(1, Math.ceil(this.totalRegistros / this.itensPorPagina));
   }
 
-  statusBadge(v: string): string {
-    if (v === 'ENVIADO') return 'ok';
-    if (v === 'ERRO') return 'err';
-    if (v === 'ENVIANDO' || v === 'PENDENTE') return 'warn';
+  classeStatus(status: string): string {
+    if (status === 'ENVIADO') return 'ok';
+    if (status === 'ERRO') return 'err';
+    if (status === 'ENVIANDO' || status === 'PENDENTE') return 'warn';
     return '';
   }
 
-  statusText(v: string): string {
-    switch (v) {
+  textoStatus(status: string): string {
+    switch (status) {
       case 'ENVIADO':
         return 'Enviado';
       case 'ERRO':
@@ -101,15 +101,15 @@ export class HistoricoComponent implements OnInit {
       case 'PENDENTE':
         return 'Pendente';
       default:
-        return v;
+        return status;
     }
   }
 
-  when(row: EnvioDetalhe): string {
-    const value = row.enviado_em || row.created_at;
-    const date = new Date(value.includes('T') ? value : value.replace(' ', 'T') + 'Z');
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString('pt-BR');
+  formatarData(registro: DetalheEnvio): string {
+    const valor = registro.enviado_em || registro.created_at;
+    const data = new Date(valor.includes('T') ? valor : valor.replace(' ', 'T') + 'Z');
+    if (Number.isNaN(data.getTime())) return valor;
+    return data.toLocaleString('pt-BR');
   }
 
   tipo(value?: string): string {
@@ -123,6 +123,6 @@ export class HistoricoComponent implements OnInit {
     this.instancia = '';
     this.de = '';
     this.ate = '';
-    this.search(1);
+    this.buscarRegistros(1);
   }
 }

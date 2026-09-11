@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { AuthService } from '../../core/auth.service';
+import { ServicoAutenticacao } from '../../services/autenticacao.service';
 
 @Component({
   selector: 'app-login',
@@ -14,57 +14,57 @@ import { AuthService } from '../../core/auth.service';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
-  private auth = inject(AuthService);
-  private router = inject(Router);
-  private http = inject(HttpClient);
+  private autenticacao = inject(ServicoAutenticacao);
+  private roteador = inject(Router);
+  private clienteHttp = inject(HttpClient);
   email = '';
-  password = '';
-  error = '';
-  loading = false;
+  senha = '';
+  erro = '';
+  carregando = false;
 
-  showSeed = false;
-  seedNome = '';
-  seedEmail = 'admin@admin.com';
-  seedPassword = 'admin';
-  seedError = '';
-  seedLoading = false;
-  seedSuccess = '';
+  mostrarCriacao = false;
+  nomeInicial = '';
+  emailInicial = 'admin@admin.com';
+  senhaInicial = 'admin';
+  erroInicial = '';
+  carregandoInicial = false;
+  sucessoInicial = '';
 
-  submit(): void {
-    this.loading = true;
-    this.error = '';
-    this.auth.login(this.email, this.password).subscribe({
-      next: () => this.router.navigateByUrl('/enviar'),
-      error: (err) => {
-        this.loading = false;
-        this.error = err.error?.message || 'Não foi possível entrar';
+  entrar(): void {
+    this.carregando = true;
+    this.erro = '';
+    this.autenticacao.entrar(this.email, this.senha).subscribe({
+      next: () => this.roteador.navigateByUrl('/enviar'),
+      error: (erro) => {
+        this.carregando = false;
+        this.erro = erro.error?.message || 'Não foi possível entrar';
       },
     });
   }
 
-  toggleSeed(): void {
-    this.showSeed = !this.showSeed;
-    this.seedError = '';
-    this.seedSuccess = '';
+  alternarCriacao(): void {
+    this.mostrarCriacao = !this.mostrarCriacao;
+    this.erroInicial = '';
+    this.sucessoInicial = '';
   }
 
-  criarPrimeiraConta(): void {
-    this.seedLoading = true;
-    this.seedError = '';
-    this.seedSuccess = '';
-    const body: { nome?: string; email: string; password: string } = { email: this.seedEmail, password: this.seedPassword };
-    if (this.seedNome) body.nome = this.seedNome;
-    this.http.post('/api/usuarios', body).subscribe({
+  criarUsuarioInicial(): void {
+    this.carregandoInicial = true;
+    this.erroInicial = '';
+    this.sucessoInicial = '';
+    const dados: { nome?: string; email: string; password: string } = { email: this.emailInicial, password: this.senhaInicial };
+    if (this.nomeInicial) dados.nome = this.nomeInicial;
+    this.clienteHttp.post('/api/usuarios', dados).subscribe({
       next: () => {
-      this.seedLoading = false;
-        this.seedSuccess = 'Conta criada! Preencha os campos abaixo e entre.';
-        this.email = this.seedEmail;
-        this.password = this.seedPassword;
-        this.showSeed = false;
+        this.carregandoInicial = false;
+        this.sucessoInicial = 'Conta criada! Preencha os campos abaixo e entre.';
+        this.email = this.emailInicial;
+        this.senha = this.senhaInicial;
+        this.mostrarCriacao = false;
       },
-      error: (err) => {
-        this.seedLoading = false;
-        this.seedError = err.error?.message || 'Não foi possível criar a conta';
+      error: (erro) => {
+        this.carregandoInicial = false;
+        this.erroInicial = erro.error?.message || 'Não foi possível criar a conta';
       },
     });
   }

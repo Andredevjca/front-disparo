@@ -6,19 +6,20 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { ApiService } from '../../core/api.service';
-import { WhatsappStatusService } from '../../core/whatsapp-status.service';
+import { ServicoMassa } from '../../services/massa.service';
+import { ServicoModelos } from '../../services/modelos.service';
+import { ServicoStatusWhatsApp } from '../../services/status-whatsapp.service';
 import {
   ContatoImportado,
   Envio,
-  EnvioDetalhe,
-  GrupoDetalhePaginado,
+  DetalheEnvio,
+  DetalheGrupoPaginado,
   GrupoImportacao,
-  Template,
-} from '../../core/models';
-import { interpolate } from '../../core/interpolate';
+} from '../../models/massa.model';
+import { ModeloMensagem } from '../../models/template.model';
+import { interpolar } from '../../util/texto.util';
 
-type Step = 'grupos' | 'importar' | 'detalhe' | 'run';
+type Etapa = 'grupos' | 'importar' | 'detalhe' | 'run';
 
 @Component({
   selector: 'app-massa',
@@ -35,54 +36,55 @@ type Step = 'grupos' | 'importar' | 'detalhe' | 'run';
   styleUrl: './massa.component.scss',
 })
 export class MassaComponent implements OnInit, OnDestroy {
-  private api = inject(ApiService);
-  readonly wa = inject(WhatsappStatusService);
+  private servicoMassa = inject(ServicoMassa);
+  private servicoModelos = inject(ServicoModelos);
+  readonly wa = inject(ServicoStatusWhatsApp);
 
-  instance = '';
-  step: Step = 'grupos';
-  dragging = false;
+  instancia = '';
+  etapa: Etapa = 'grupos';
+  arrastando = false;
   erro: string | null = null;
   carregando = false;
 
   grupos: GrupoImportacao[] = [];
   grupoSelecionado: GrupoImportacao | null = null;
-  detalhe: GrupoDetalhePaginado | null = null;
-  page = 1;
-  perPage = 20;
+  detalhe: DetalheGrupoPaginado | null = null;
+  pagina = 1;
+  itensPorPagina = 20;
   busca = '';
 
-  importarNome = '';
+  nomeImportacao = '';
   arquivoSelecionado: File | null = null;
   importando = false;
 
-  templates: Template[] = [];
-  templateId: number | null = null;
+  modelos: ModeloMensagem[] = [];
+  idModelo: number | null = null;
   mensagem = '';
   intervalo = 3000;
-  customIntervalo = 3000;
-  intervals = [1000, 3000, 5000, 10000, 15000, 30000];
+  intervaloPersonalizado = 3000;
+  opcoesIntervalo = [1000, 3000, 5000, 10000, 15000, 30000];
 
-  jobId: number | null = null;
+  idDisparo: number | null = null;
   envio: Envio | null = null;
-  detalhes: EnvioDetalhe[] = [];
-  pausedMessage = '';
-  private poll: ReturnType<typeof setInterval> | null = null;
+  detalhes: DetalheEnvio[] = [];
+  mensagemPausado = '';
+  private temporizador: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
-    const first = this.wa.conectadas()[0];
-    if (first) this.instance = first.instance;
-    this.api.templates().subscribe((rows) => (this.templates = rows));
+    const primeiraConta = this.wa.conectadas()[0];
+    if (primeiraConta) this.instancia = primeiraConta.instance;
+    this.servicoModelos.listar().subscribe((modelos) => (this.modelos = modelos));
     this.carregarGrupos();
   }
 
   ngOnDestroy(): void {
-    if (this.poll) clearInterval(this.poll);
+    if (this.temporizador) clearInterval(this.temporizador);
   }
 
   carregarGrupos(): void {
-    this.api.grupos().subscribe({
-      next: (rows) => {
-        this.grupos = rows;
+    this.servicoMassa.listarGrupos().subscribe({
+      next: (grupos) => {
+        this.grupos = grupos;
       },
       error: (err) => (this.erro = err?.error?.message || 'Falha ao carregar grupos'),
     });
@@ -91,28 +93,28 @@ export class MassaComponent implements OnInit, OnDestroy {
   irParaImportar(): void {
     this.erro = null;
     this.arquivoSelecionado = null;
-    this.step = 'importar';
+    this.etapa = 'importar';
   }
 
   cancelarImportar(): void {
-    this.importarNome = '';
+    this.nomeImportacao = '';
     this.arquivoSelecionado = null;
     this.erro = null;
-    this.step = 'grupos';
+    this.etapa = 'grupos';
   }
 
-  pick(event: Event): void {
+  selecionarArquivoNoCampo(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) this.selecionarArquivo(file);
+    const arquivo = input.files?.[0];
+    if (arquivo) this.selecionarArquivo(arquivo);
     input.value = '';
   }
 
-  drop(event: DragEvent): void {
+  soltarArquivo(event: DragEvent): void {
     event.preventDefault();
-    this.dragging = false;
-    const file = event.dataTransfer?.files?.[0];
-    if (file) this.selecionarArquivo(file);
+    this.arrastando = false;
+    const arquivo = event.dataTransfer?.files?.[0];
+    if (arquivo) this.selecionarArquivo(arquivo);
   }
 
   selecionarArquivo(file: File): void {
@@ -136,19 +138,19 @@ export class MassaComponent implements OnInit, OnDestroy {
       this.erro = 'Selecione uma planilha primeiro.';
       return;
     }
-    this.uploadFile(this.arquivoSelecionado);
+    this.importarArquivo(this.arquivoSelecionado);
   }
 
-  uploadFile(file: File): void {
+  importarArquivo(arquivo: File): void {
     this.erro = null;
     this.importando = true;
-    this.api.importarPlanilha(file, this.importarNome || undefined).subscribe({
+    this.servicoMassa.importar(arquivo, this.nomeImportacao || undefined).subscribe({
       next: () => {
         this.importando = false;
-        this.importarNome = '';
+        this.nomeImportacao = '';
         this.arquivoSelecionado = null;
         this.carregarGrupos();
-        this.step = 'grupos';
+        this.etapa = 'grupos';
       },
       error: (err) => {
         this.importando = false;
@@ -159,15 +161,15 @@ export class MassaComponent implements OnInit, OnDestroy {
 
   abrirGrupo(g: GrupoImportacao): void {
     this.grupoSelecionado = g;
-    this.page = 1;
+    this.pagina = 1;
     this.busca = '';
     this.carregarDetalhe();
-    this.step = 'detalhe';
+    this.etapa = 'detalhe';
   }
 
   excluirGrupo(g: GrupoImportacao): void {
     if (!confirm(`Excluir grupo "${g.nome || g.arquivo_nome || g.id}" e todos os contatos?`)) return;
-    this.api.excluirGrupo(g.id).subscribe({
+    this.servicoMassa.excluirGrupo(g.id).subscribe({
       next: () => {
         if (this.grupoSelecionado?.id === g.id) {
           this.grupoSelecionado = null;
@@ -183,12 +185,12 @@ export class MassaComponent implements OnInit, OnDestroy {
     if (p < 1) return;
     const max = this.totalPaginas();
     if (max && p > max) return;
-    this.page = p;
+    this.pagina = p;
     this.carregarDetalhe();
   }
 
   buscar(): void {
-    this.page = 1;
+    this.pagina = 1;
     this.carregarDetalhe();
   }
 
@@ -200,7 +202,7 @@ export class MassaComponent implements OnInit, OnDestroy {
   carregarDetalhe(): void {
     if (!this.grupoSelecionado) return;
     this.carregando = true;
-    this.api.grupoDetalhe(this.grupoSelecionado.id, this.page, this.perPage, this.busca).subscribe({
+    this.servicoMassa.obterGrupo(this.grupoSelecionado.id, this.pagina, this.itensPorPagina, this.busca).subscribe({
       next: (d) => {
         this.detalhe = d;
         this.carregando = false;
@@ -212,25 +214,25 @@ export class MassaComponent implements OnInit, OnDestroy {
     });
   }
 
-  selectedTemplate(): Template | undefined {
-    return this.templates.find((t) => t.id === this.templateId);
+  modeloSelecionado(): ModeloMensagem | undefined {
+    return this.modelos.find((modelo) => modelo.id === this.idModelo);
   }
 
-  onTemplate(): void {
-    this.mensagem = this.selectedTemplate()?.mensagem || this.mensagem;
+  aoSelecionarModelo(): void {
+    this.mensagem = this.modeloSelecionado()?.mensagem || this.mensagem;
   }
 
-  preview(): string {
-    if (!this.detalhe) return interpolate(this.mensagem, {});
+  visualizarMensagem(): string {
+    if (!this.detalhe) return interpolar(this.mensagem, {});
     const primeiroValido = this.detalhe.contatos.find((c) => c.status_validacao === 'VALIDO');
-    if (!primeiroValido) return interpolate(this.mensagem, {});
+    if (!primeiroValido) return interpolar(this.mensagem, {});
     const dados: Record<string, unknown> = {
       ...(primeiroValido.dados || {}),
       nome: primeiroValido.nome || '',
       email: primeiroValido.email || '',
       telefone: primeiroValido.telefone_normalizado || primeiroValido.telefone_original || '',
     };
-    return interpolate(this.mensagem, dados);
+    return interpolar(this.mensagem, dados);
   }
 
   private primeiroContatoValido(): ContatoImportado | null {
@@ -240,72 +242,72 @@ export class MassaComponent implements OnInit, OnDestroy {
 
   iniciarDisparo(): void {
     if (!this.grupoSelecionado) return;
-    const intervaloMs = this.intervalo === 0 ? this.customIntervalo : this.intervalo;
+    const intervaloMs = this.intervalo === 0 ? this.intervaloPersonalizado : this.intervalo;
     this.erro = null;
-    this.api
-      .enviarMassaPorGrupo(this.grupoSelecionado.id, {
-        templateId: this.templateId,
-        templateNome: this.selectedTemplate()?.nome,
+    this.servicoMassa
+      .iniciar(this.grupoSelecionado.id, {
+        idModelo: this.idModelo,
+        nomeModelo: this.modeloSelecionado()?.nome,
         mensagem: this.mensagem || null,
         intervaloMs: intervaloMs || null,
-        instance: this.instance,
+        instancia: this.instancia,
       })
       .subscribe({
         next: ({ id }) => {
-          this.jobId = id;
-          this.step = 'run';
-          this.poll = setInterval(() => this.refresh(), 1500);
-          this.refresh();
+          this.idDisparo = id;
+          this.etapa = 'run';
+          this.temporizador = setInterval(() => this.atualizarDisparo(), 1500);
+          this.atualizarDisparo();
         },
         error: (err) => (this.erro = err?.error?.message || 'Falha ao iniciar disparo'),
       });
   }
 
-  stop(): void {
-    if (!this.jobId) return;
-    this.api.pararMassa(this.jobId).subscribe(() => this.refresh());
+  pararDisparo(): void {
+    if (!this.idDisparo) return;
+    this.servicoMassa.parar(this.idDisparo).subscribe(() => this.atualizarDisparo());
   }
 
-  refresh(): void {
-    if (!this.jobId) return;
-    this.api.massa(this.jobId).subscribe({
+  atualizarDisparo(): void {
+    if (!this.idDisparo) return;
+    this.servicoMassa.obterEnvio(this.idDisparo).subscribe({
       next: ({ envio, detalhes }) => {
         this.envio = envio;
         this.detalhes = detalhes;
         if (envio.status === 'PAUSADO') {
-          this.pausedMessage = 'WhatsApp desconectado. O disparo foi pausado.';
+          this.mensagemPausado = 'WhatsApp desconectado. O disparo foi pausado.';
         }
-        if (['CONCLUIDO', 'PARADO', 'PAUSADO'].includes(envio.status) && this.poll) {
-          clearInterval(this.poll);
-          this.poll = null;
+        if (['CONCLUIDO', 'PARADO', 'PAUSADO'].includes(envio.status) && this.temporizador) {
+          clearInterval(this.temporizador);
+          this.temporizador = null;
         }
       },
     });
   }
 
-  hour(value: string | null): string {
-    if (!value) return '-';
+  formatarHora(valor: string | null): string {
+    if (!valor) return '-';
     try {
-      const date = new Date(value.includes('T') ? value : value.replace(' ', 'T') + 'Z');
-      if (Number.isNaN(date.getTime())) return value.slice(11, 19);
-      return date.toLocaleTimeString('pt-BR');
+      const data = new Date(valor.includes('T') ? valor : valor.replace(' ', 'T') + 'Z');
+      if (Number.isNaN(data.getTime())) return valor.slice(11, 19);
+      return data.toLocaleTimeString('pt-BR');
     } catch {
-      return value;
+      return valor;
     }
   }
 
-  statusBadge(v: string): string {
-    if (v === 'VALIDO') return 'ok';
-    if (v === 'INVALIDO') return 'err';
-    if (v === 'DUPLICADO') return 'dup';
+  classeStatus(status: string): string {
+    if (status === 'VALIDO') return 'ok';
+    if (status === 'INVALIDO') return 'err';
+    if (status === 'DUPLICADO') return 'dup';
     return '';
   }
 
-  statusText(v: string): string {
-    if (v === 'VALIDO') return 'Válido';
-    if (v === 'INVALIDO') return 'Inválido';
-    if (v === 'DUPLICADO') return 'Duplicado';
-    return v;
+  textoStatus(status: string): string {
+    if (status === 'VALIDO') return 'Válido';
+    if (status === 'INVALIDO') return 'Inválido';
+    if (status === 'DUPLICADO') return 'Duplicado';
+    return status;
   }
 
   dadosExtras(c: ContatoImportado): Array<[string, unknown]> {

@@ -4,9 +4,9 @@ import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { ApiService } from '../../core/api.service';
-import { Template } from '../../core/models';
-import { interpolate } from '../../core/interpolate';
+import { ServicoModelos } from '../../services/modelos.service';
+import { ModeloMensagem } from '../../models/template.model';
+import { interpolar } from '../../util/texto.util';
 
 @Component({
   selector: 'app-templates',
@@ -15,23 +15,23 @@ import { interpolate } from '../../core/interpolate';
   styleUrl: './templates.component.scss',
 })
 export class TemplatesComponent implements OnInit {
-  private api = inject(ApiService);
+  private servicoModelos = inject(ServicoModelos);
   private router = inject(Router);
-  templates: Template[] = [];
-  editing: Template | null = null;
+  modelos: ModeloMensagem[] = [];
+  modeloEmEdicao: ModeloMensagem | null = null;
   nome = '';
   mensagem = 'Olá {{nome}},\n\nIdentificamos uma pendência no valor de R$ {{valor}}.\n\nVencimento: {{vencimento}}.\n\nEntre em contato conosco para mais informações.';
 
   ngOnInit(): void {
-    this.load();
+    this.carregarModelos();
   }
 
-  load(): void {
-    this.api.templates().subscribe((rows) => (this.templates = rows));
+  carregarModelos(): void {
+    this.servicoModelos.listar().subscribe((modelos) => (this.modelos = modelos));
   }
 
-  preview(): string {
-    return interpolate(this.mensagem, {
+  visualizarMensagem(): string {
+    return interpolar(this.mensagem, {
       nome: 'João',
       telefone: '5585999999999',
       cpf: '000.000.000-00',
@@ -40,30 +40,30 @@ export class TemplatesComponent implements OnInit {
     });
   }
 
-  save(): void {
-    this.api.saveTemplate({ id: this.editing?.id, nome: this.nome, mensagem: this.mensagem }).subscribe(() => {
-      this.cancel();
-      this.load();
+  salvarModelo(): void {
+    this.servicoModelos.salvar({ id: this.modeloEmEdicao?.id, nome: this.nome, mensagem: this.mensagem }).subscribe(() => {
+      this.cancelarEdicao();
+      this.carregarModelos();
     });
   }
 
-  edit(item: Template): void {
-    this.editing = item;
-    this.nome = item.nome;
-    this.mensagem = item.mensagem;
+  editarModelo(modelo: ModeloMensagem): void {
+    this.modeloEmEdicao = modelo;
+    this.nome = modelo.nome;
+    this.mensagem = modelo.mensagem;
   }
 
-  remove(item: Template): void {
-    this.api.deleteTemplate(item.id).subscribe(() => this.load());
+  excluirModelo(modelo: ModeloMensagem): void {
+    this.servicoModelos.excluir(modelo.id).subscribe(() => this.carregarModelos());
   }
 
-  use(item: Template): void {
-    sessionStorage.setItem('templateId', String(item.id));
+  usarModelo(modelo: ModeloMensagem): void {
+    sessionStorage.setItem('templateId', String(modelo.id));
     void this.router.navigate(['/enviar']);
   }
 
-  cancel(): void {
-    this.editing = null;
+  cancelarEdicao(): void {
+    this.modeloEmEdicao = null;
     this.nome = '';
     this.mensagem =
       'Olá {{nome}},\n\nIdentificamos uma pendência no valor de R$ {{valor}}.\n\nVencimento: {{vencimento}}.\n\nEntre em contato conosco para mais informações.';

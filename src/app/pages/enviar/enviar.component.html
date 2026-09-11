@@ -6,16 +6,16 @@
     </div>
   </div>
   <div class="work">
-    <form class="card" (ngSubmit)="send()">
+    <form class="card" (ngSubmit)="enviarMensagem()">
       @if (!wa.conectadas().length) {
         <p class="warn-line">Nenhuma conta conectada. Vá em WhatsApp e conecte um número.</p>
       }
       <div class="row">
         <mat-form-field appearance="outline">
           <mat-label>Enviar de</mat-label>
-          <mat-select [(ngModel)]="instance" name="instance" required>
-            @for (account of wa.conectadas(); track account.instance) {
-              <mat-option [value]="account.instance">{{ account.number || account.instance }}</mat-option>
+          <mat-select [(ngModel)]="instancia" name="instancia" required>
+            @for (conta of wa.conectadas(); track conta.instance) {
+              <mat-option [value]="conta.instance">{{ conta.number || conta.instance }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -31,9 +31,9 @@
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Template</mat-label>
-          <mat-select [(ngModel)]="templateId" name="templateId" (selectionChange)="onTemplate()">
-            @for (item of templates; track item.id) {
-              <mat-option [value]="item.id">{{ item.nome }}</mat-option>
+          <mat-select [(ngModel)]="idModelo" name="idModelo" (selectionChange)="aoSelecionarModelo()">
+            @for (modelo of modelos; track modelo.id) {
+              <mat-option [value]="modelo.id">{{ modelo.nome }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -42,17 +42,17 @@
         <mat-label>Mensagem</mat-label>
         <textarea matInput rows="8" [(ngModel)]="mensagem" name="mensagem" required></textarea>
       </mat-form-field>
-      <button mat-flat-button class="cta" [disabled]="loading || !instance">{{ loading ? 'Enviando...' : 'Enviar mensagem' }}</button>
+      <button mat-flat-button class="cta" [disabled]="carregando || !instancia">{{ carregando ? 'Enviando...' : 'Enviar mensagem' }}</button>
     </form>
     <aside class="card side">
       <div class="preview">
         <strong>Mensagem final</strong>
-        <pre>{{ finalMessage() }}</pre>
+        <pre>{{ mensagemFinal() }}</pre>
       </div>
-      @if (result) {
-        <div class="result" [class.ok]="result.status === 'ENVIADO'" [class.err]="result.status !== 'ENVIADO'">
-          @if (result.status === 'ENVIADO') { Enviado com sucesso para {{ result.telefone }} }
-          @else { Erro no envio{{ result.erro ? ': ' + result.erro : '' }} }
+      @if (resultado) {
+        <div class="result" [class.ok]="resultado.status === 'ENVIADO'" [class.err]="resultado.status !== 'ENVIADO'">
+          @if (resultado.status === 'ENVIADO') { Enviado com sucesso para {{ resultado.telefone }} }
+          @else { Erro no envio{{ resultado.erro ? ': ' + resultado.erro : '' }} }
         </div>
       }
     </aside>

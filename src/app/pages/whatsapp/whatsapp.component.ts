@@ -3,9 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { ApiService } from '../../core/api.service';
-import { WhatsappStatusService } from '../../core/whatsapp-status.service';
-import { WhatsAppAccount } from '../../core/models';
+import { ServicoWhatsApp } from '../../services/whatsapp.service';
+import { ServicoStatusWhatsApp } from '../../services/status-whatsapp.service';
+import { ContaWhatsApp } from '../../models/whatsapp.model';
 
 @Component({
   selector: 'app-whatsapp',
@@ -14,118 +14,118 @@ import { WhatsAppAccount } from '../../core/models';
   styleUrl: './whatsapp.component.scss',
 })
 export class WhatsappComponent implements OnDestroy {
-  private api = inject(ApiService);
-  readonly wa = inject(WhatsappStatusService);
+  private servicoWhatsApp = inject(ServicoWhatsApp);
+  readonly wa = inject(ServicoStatusWhatsApp);
   nome = '';
   qrcode: string | null = null;
-  connecting: string | null = null;
-  error = '';
-  loading = false;
-  private poll: ReturnType<typeof setInterval> | null = null;
+  conectando: string | null = null;
+  erro = '';
+  carregando = false;
+  private temporizador: ReturnType<typeof setInterval> | null = null;
 
-  add(): void {
-    this.loading = true;
-    this.error = '';
-    this.api.criarConta(this.nome).subscribe({
-      next: (account) => {
-        this.loading = false;
+  adicionarConta(): void {
+    this.carregando = true;
+    this.erro = '';
+    this.servicoWhatsApp.criarConta(this.nome).subscribe({
+      next: (conta) => {
+        this.carregando = false;
         this.nome = '';
-        this.wa.refresh();
-        if (account.connected) return;
-        if (account.qrcode) {
-          this.apply(account);
-          this.startPoll(account.instance);
+        this.wa.atualizar();
+        if (conta.connected) return;
+        if (conta.qrcode) {
+          this.aplicarStatus(conta);
+          this.iniciarMonitoramento(conta.instance);
           return;
         }
-        this.connect(account);
+        this.conectarConta(conta);
       },
-      error: (err) => {
-        this.loading = false;
-        this.error = err.error?.message || 'Não foi possível criar a conta';
+      error: (erro) => {
+        this.carregando = false;
+        this.erro = erro.error?.message || 'Não foi possível criar a conta';
       },
     });
   }
 
-  connect(account: WhatsAppAccount): void {
-    this.loading = true;
-    this.error = '';
-    this.api.connect(account.instance).subscribe({
+  conectarConta(conta: ContaWhatsApp): void {
+    this.carregando = true;
+    this.erro = '';
+    this.servicoWhatsApp.conectar(conta.instance).subscribe({
       next: (status) => {
-        this.loading = false;
-        this.apply(status);
-        this.startPoll(account.instance);
-        this.wa.refresh();
+        this.carregando = false;
+        this.aplicarStatus(status);
+        this.iniciarMonitoramento(conta.instance);
+        this.wa.atualizar();
       },
-      error: (err) => {
-        this.loading = false;
-        this.error = err.error?.message || 'Falha ao conectar';
+      error: (erro) => {
+        this.carregando = false;
+        this.erro = erro.error?.message || 'Falha ao conectar';
       },
     });
   }
 
-  disconnect(account: WhatsAppAccount): void {
-    this.api.disconnect(account.instance).subscribe({
+  desconectarConta(conta: ContaWhatsApp): void {
+    this.servicoWhatsApp.desconectar(conta.instance).subscribe({
       next: () => {
-        if (this.connecting === account.instance) {
+        if (this.conectando === conta.instance) {
           this.qrcode = null;
-          this.connecting = null;
-          this.clearPoll();
+          this.conectando = null;
+          this.limparMonitoramento();
         }
-        this.wa.refresh();
+        this.wa.atualizar();
       },
-      error: (err) => (this.error = err.error?.message || 'Falha ao desconectar'),
+      error: (erro) => (this.erro = erro.error?.message || 'Falha ao desconectar'),
     });
   }
 
-  remove(account: WhatsAppAccount): void {
-    this.api.removerConta(account.instance).subscribe({
-      next: () => this.wa.refresh(),
-      error: (err) => (this.error = err.error?.message || 'Falha ao remover'),
+  removerConta(conta: ContaWhatsApp): void {
+    this.servicoWhatsApp.excluirConta(conta.instance).subscribe({
+      next: () => this.wa.atualizar(),
+      error: (erro) => (this.erro = erro.error?.message || 'Falha ao remover'),
     });
   }
 
   ngOnDestroy(): void {
-    this.clearPoll();
+    this.limparMonitoramento();
   }
 
-  private apply(status: WhatsAppAccount): void {
-    this.connecting = status.instance;
+  private aplicarStatus(status: ContaWhatsApp): void {
+    this.conectando = status.instance;
     this.qrcode = status.qrcode;
     if (status.connected) {
       this.qrcode = null;
-      this.connecting = null;
-      this.clearPoll();
+      this.conectando = null;
+      this.limparMonitoramento();
     }
   }
 
-  private startPoll(instance: string): void {
-    this.clearPoll();
-    let ticks = 0;
-    this.poll = setInterval(() => {
-      ticks += 1;
-      if (ticks % 8 === 0) {
-        this.api.connect(instance).subscribe({
+  private iniciarMonitoramento(instancia: string): void {
+    this.limparMonitoramento();
+    let ciclos = 0;
+    this.temporizador = setInterval(() => {
+      ciclos += 1;
+      if (ciclos % 8 === 0) {
+        this.servicoWhatsApp.conectar(instancia).subscribe({
           next: (status) => {
             if (status.qrcode && !status.connected) this.qrcode = status.qrcode;
           },
         });
       }
-      this.api.contas().subscribe({
+      this.servicoWhatsApp.listarContas().subscribe({
         next: (contas) => {
-          const current = contas.find((item) => item.instance === instance);
-          this.wa.refresh();
-          if (current?.connected) {
+          const contaAtual = contas.find((conta) => conta.instance === instancia);
+          this.wa.atualizar();
+          if (contaAtual?.connected) {
             this.qrcode = null;
-            this.connecting = null;
-            this.clearPoll();
+            this.conectando = null;
+            this.limparMonitoramento();
           }
         },
       });
     }, 2500);
   }
 
-  private clearPoll(): void {
-    if (this.poll) clearInterval(this.poll);
-    this.poll = null;
+  private limparMonitoramento(): void {
+    if (this.temporizador) clearInterval(this.temporizador);
+    this.temporizador = null;
   }
 }

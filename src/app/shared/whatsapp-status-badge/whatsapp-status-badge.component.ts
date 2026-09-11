@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { WhatsappStatusService } from '../../core/whatsapp-status.service';
+import { ServicoStatusWhatsApp } from '../../services/status-whatsapp.service';
 
 @Component({
   selector: 'app-whatsapp-status-badge',
@@ -10,8 +10,8 @@ import { WhatsappStatusService } from '../../core/whatsapp-status.service';
     <a
       routerLink="/whatsapp"
       class="wa-badge"
-      [class.connected]="hasConnected()"
-      [class.loading]="wa.summary() === null"
+      [class.connected]="possuiConexao()"
+      [class.loading]="wa.resumo() === null"
       title="Gerenciar conexões WhatsApp"
       aria-label="Gerenciar conexões WhatsApp"
     >
@@ -87,9 +87,9 @@ import { WhatsappStatusService } from '../../core/whatsapp-status.service';
   `],
 })
 export class WhatsappStatusBadgeComponent {
-  readonly wa = inject(WhatsappStatusService);
+  readonly wa = inject(ServicoStatusWhatsApp);
 
-  hasConnected(): boolean {
-    return (this.wa.summary()?.connected ?? 0) > 0;
+  possuiConexao(): boolean {
+    return (this.wa.resumo()?.connected ?? 0) > 0;
   }
 }

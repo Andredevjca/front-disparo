@@ -4,10 +4,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { ApiService } from '../../core/api.service';
-import { WhatsappStatusService } from '../../core/whatsapp-status.service';
-import { Template } from '../../core/models';
-import { interpolate } from '../../core/interpolate';
+import { ServicoEnvio } from '../../services/envio.service';
+import { ServicoModelos } from '../../services/modelos.service';
+import { ServicoStatusWhatsApp } from '../../services/status-whatsapp.service';
+import { ModeloMensagem } from '../../models/template.model';
+import { interpolar } from '../../util/texto.util';
+import { ResultadoEnvioUnitario } from '../../models/enviar.model';
 
 @Component({
   selector: 'app-enviar',
@@ -16,61 +18,62 @@ import { interpolate } from '../../core/interpolate';
   styleUrl: './enviar.component.scss',
 })
 export class EnviarComponent implements OnInit {
-  private api = inject(ApiService);
-  readonly wa = inject(WhatsappStatusService);
-  templates: Template[] = [];
+  private servicoEnvio = inject(ServicoEnvio);
+  private servicoModelos = inject(ServicoModelos);
+  readonly wa = inject(ServicoStatusWhatsApp);
+  modelos: ModeloMensagem[] = [];
   telefone = '';
   nome = '';
-  templateId: number | null = null;
-  instance = '';
+  idModelo: number | null = null;
+  instancia = '';
   mensagem = '';
-  loading = false;
-  result: { status: string; erro: string | null; telefone: string } | null = null;
+  carregando = false;
+  resultado: ResultadoEnvioUnitario | null = null;
 
   ngOnInit(): void {
-    const first = this.wa.conectadas()[0];
-    if (first) this.instance = first.instance;
-    this.api.templates().subscribe((rows) => {
-      this.templates = rows;
-      const saved = Number(sessionStorage.getItem('templateId') || 0);
-      if (saved) {
-        this.templateId = saved;
+    const primeiraConta = this.wa.conectadas()[0];
+    if (primeiraConta) this.instancia = primeiraConta.instance;
+    this.servicoModelos.listar().subscribe((rows) => {
+      this.modelos = rows;
+      const idSalvo = Number(sessionStorage.getItem('templateId') || 0);
+      if (idSalvo) {
+        this.idModelo = idSalvo;
         sessionStorage.removeItem('templateId');
-        this.onTemplate();
+        this.aoSelecionarModelo();
       }
     });
   }
 
-  onTemplate(): void {
-    const item = this.templates.find((t) => t.id === this.templateId);
-    this.mensagem = item?.mensagem || this.mensagem;
+  aoSelecionarModelo(): void {
+    const modelo = this.modelos.find((item) => item.id === this.idModelo);
+    this.mensagem = modelo?.mensagem || this.mensagem;
   }
 
-  finalMessage(): string {
-    return interpolate(this.mensagem, { nome: this.nome, telefone: this.telefone });
+  mensagemFinal(): string {
+    return interpolar(this.mensagem, { nome: this.nome, telefone: this.telefone });
   }
 
-  send(): void {
-    this.loading = true;
-    this.result = null;
-    const item = this.templates.find((t) => t.id === this.templateId);
-    this.api
-      .sendUnitario({
+  enviarMensagem(): void {
+    this.carregando = true;
+    this.resultado = null;
+    const modelo = this.modelos.find((item) => item.id === this.idModelo);
+    this.servicoEnvio
+      .enviar({
         telefone: this.telefone,
         nome: this.nome,
         mensagem: this.mensagem,
-        templateId: this.templateId,
-        templateNome: item?.nome,
-        instance: this.instance,
+        idModelo: this.idModelo,
+        nomeModelo: modelo?.nome,
+        instancia: this.instancia,
       })
       .subscribe({
-        next: (res) => {
-          this.loading = false;
-          this.result = res;
+        next: (resposta) => {
+          this.carregando = false;
+          this.resultado = resposta;
         },
-        error: (err) => {
-          this.loading = false;
-          this.result = { status: 'ERRO', erro: err.error?.message || 'Erro no envio', telefone: this.telefone };
+        error: (erro) => {
+          this.carregando = false;
+          this.resultado = { status: 'ERRO', erro: erro.error?.message || 'Erro no envio', telefone: this.telefone };
         },
       });
   }

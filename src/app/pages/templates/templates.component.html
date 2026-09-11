@@ -4,7 +4,7 @@
     <p>Crie a mensagem uma vez. As variáveis da planilha entram automaticamente no disparo.</p>
   </div>
   <div class="grid">
-    <form class="card" (ngSubmit)="save()">
+    <form class="card" (ngSubmit)="salvarModelo()">
       <mat-form-field appearance="outline" class="full">
         <mat-label>Nome</mat-label>
         <input matInput [(ngModel)]="nome" name="nome" required>
@@ -16,25 +16,25 @@
       <p class="hint">Variáveis: {{ '{{nome}}' }}, {{ '{{telefone}}' }}, {{ '{{valor}}' }} ou qualquer coluna da planilha.</p>
       <div class="preview">
         <strong>Prévia</strong>
-        <pre>{{ preview() }}</pre>
+        <pre>{{ visualizarMensagem() }}</pre>
       </div>
       <div class="actions">
-        <button mat-flat-button class="cta">{{ editing ? 'Salvar' : 'Criar template' }}</button>
-        @if (editing) { <button mat-button type="button" (click)="cancel()">Cancelar</button> }
+        <button mat-flat-button class="cta">{{ modeloEmEdicao ? 'Salvar' : 'Criar template' }}</button>
+        @if (modeloEmEdicao) { <button mat-button type="button" (click)="cancelarEdicao()">Cancelar</button> }
       </div>
     </form>
     <div class="list">
-      @if (!templates.length) {
+      @if (!modelos.length) {
         <div class="card empty">Nenhum template ainda. Crie o primeiro ao lado.</div>
       }
-      @for (item of templates; track item.id) {
+      @for (modelo of modelos; track modelo.id) {
         <article class="card">
-          <h3>{{ item.nome }}</h3>
-          <pre>{{ item.mensagem }}</pre>
+          <h3>{{ modelo.nome }}</h3>
+          <pre>{{ modelo.mensagem }}</pre>
           <div class="actions">
-            <button mat-flat-button (click)="use(item)">Usar</button>
-            <button mat-button (click)="edit(item)">Editar</button>
-            <button mat-button color="warn" (click)="remove(item)">Excluir</button>
+            <button mat-flat-button (click)="usarModelo(modelo)">Usar</button>
+            <button mat-button (click)="editarModelo(modelo)">Editar</button>
+            <button mat-button color="warn" (click)="excluirModelo(modelo)">Excluir</button>
           </div>
         </article>
       }

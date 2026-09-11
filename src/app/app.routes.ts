@@ -1,12 +1,12 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { guardaAutenticacao } from './guards/autenticacao.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then((m) => m.LoginComponent) },
   {
     path: '',
-    loadComponent: () => import('./layout/shell.component').then((m) => m.ShellComponent),
-    canActivate: [authGuard],
+    loadComponent: () => import('./components/layout/shell.component').then((m) => m.ShellComponent),
+    canActivate: [guardaAutenticacao],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'enviar' },
       { path: 'whatsapp', loadComponent: () => import('./pages/whatsapp/whatsapp.component').then((m) => m.WhatsappComponent) },

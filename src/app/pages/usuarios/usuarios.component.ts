@@ -4,8 +4,8 @@ import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { ApiService } from '../../core/api.service';
-import { Usuario } from '../../core/models';
+import { ServicoUsuarios } from '../../services/usuarios.service';
+import { Usuario } from '../../models/usuario.model';
 
 @Component({
   selector: 'app-usuarios',
@@ -14,88 +14,88 @@ import { Usuario } from '../../core/models';
   styleUrl: './usuarios.component.scss',
 })
 export class UsuariosComponent implements OnInit {
-  private api = inject(ApiService);
+  private servicoUsuarios = inject(ServicoUsuarios);
   usuarios: Usuario[] = [];
-  editing: Usuario | null = null;
+  usuarioEmEdicao: Usuario | null = null;
   nome = '';
   email = '';
-  password = '';
-  error = '';
-  success = '';
+  senha = '';
+  erro = '';
+  sucesso = '';
 
   ngOnInit(): void {
-    this.load();
+    this.carregarUsuarios();
   }
 
-  load(): void {
-    this.api.usuarios().subscribe({
-      next: (rows) => (this.usuarios = rows),
-      error: (err) => (this.error = err.error?.message || 'Erro ao carregar usuários'),
+  carregarUsuarios(): void {
+    this.servicoUsuarios.listar().subscribe({
+      next: (usuarios) => (this.usuarios = usuarios),
+      error: (erro) => (this.erro = erro.error?.message || 'Erro ao carregar usuários'),
     });
   }
 
-  save(): void {
-    this.error = '';
-    this.success = '';
+  salvarUsuario(): void {
+    this.erro = '';
+    this.sucesso = '';
     const payload = {
       nome: this.nome || undefined,
       email: this.email,
-      password: this.password,
+      password: this.senha,
     };
-    if (this.editing) {
+    if (this.usuarioEmEdicao) {
       const body: { nome?: string; email: string; password?: string } = {
         nome: this.nome || undefined,
         email: this.email,
       };
-      if (this.password) body.password = this.password;
-      this.api.atualizarUsuario(this.editing.id, body).subscribe({
+      if (this.senha) body.password = this.senha;
+      this.servicoUsuarios.atualizar(this.usuarioEmEdicao.id, body).subscribe({
         next: () => {
-          this.success = 'Usuário atualizado';
-          this.cancel();
-          this.load();
+          this.sucesso = 'Usuário atualizado';
+          this.cancelarEdicao();
+          this.carregarUsuarios();
         },
-        error: (err) => (this.error = err.error?.message || 'Erro ao atualizar usuário'),
+        error: (erro) => (this.erro = erro.error?.message || 'Erro ao atualizar usuário'),
       });
     } else {
-      if (!this.password) {
-        this.error = 'Senha é obrigatória';
+      if (!this.senha) {
+        this.erro = 'Senha é obrigatória';
         return;
       }
-      this.api.criarUsuario(payload).subscribe({
+      this.servicoUsuarios.criar(payload).subscribe({
         next: () => {
-          this.success = 'Usuário criado';
-          this.cancel();
-          this.load();
+          this.sucesso = 'Usuário criado';
+          this.cancelarEdicao();
+          this.carregarUsuarios();
         },
-        error: (err) => (this.error = err.error?.message || 'Erro ao criar usuário'),
+        error: (erro) => (this.erro = erro.error?.message || 'Erro ao criar usuário'),
       });
     }
   }
 
-  edit(item: Usuario): void {
-    this.editing = item;
-    this.nome = item.nome || '';
-    this.email = item.email;
-    this.password = '';
-    this.error = '';
-    this.success = '';
+  editarUsuario(usuario: Usuario): void {
+    this.usuarioEmEdicao = usuario;
+    this.nome = usuario.nome || '';
+    this.email = usuario.email;
+    this.senha = '';
+    this.erro = '';
+    this.sucesso = '';
   }
 
-  remove(item: Usuario): void {
-    if (!confirm(`Excluir usuário ${item.email}?`)) return;
-    this.api.excluirUsuario(item.id).subscribe({
+  excluirUsuario(usuario: Usuario): void {
+    if (!confirm(`Excluir usuário ${usuario.email}?`)) return;
+    this.servicoUsuarios.excluir(usuario.id).subscribe({
       next: () => {
-        this.success = 'Usuário excluído';
-        this.load();
+        this.sucesso = 'Usuário excluído';
+        this.carregarUsuarios();
       },
-      error: (err) => (this.error = err.error?.message || 'Erro ao excluir usuário'),
+      error: (erro) => (this.erro = erro.error?.message || 'Erro ao excluir usuário'),
     });
   }
 
-  cancel(): void {
-    this.editing = null;
+  cancelarEdicao(): void {
+    this.usuarioEmEdicao = null;
     this.nome = '';
     this.email = '';
-    this.password = '';
+    this.senha = '';
   }
 }

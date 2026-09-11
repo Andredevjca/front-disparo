@@ -9,13 +9,13 @@
   }
 
   <div class="steps">
-    <div class="step" [class.on]="step === 'grupos' || step === 'importar'"><span class="n">1</span> Grupos</div>
-    <div class="step" [class.on]="step === 'detalhe'"><span class="n">2</span> Contatos / Template</div>
-    <div class="step" [class.on]="step === 'run'"><span class="n">3</span> Disparo</div>
+    <div class="step" [class.on]="etapa === 'grupos' || etapa === 'importar'"><span class="n">1</span> Grupos</div>
+    <div class="step" [class.on]="etapa === 'detalhe'"><span class="n">2</span> Contatos / Template</div>
+    <div class="step" [class.on]="etapa === 'run'"><span class="n">3</span> Disparo</div>
   </div>
 
   <!-- Step 1: Lista de grupos + botao novo -->
-  @if (step === 'grupos') {
+  @if (etapa === 'grupos') {
     <div class="card grupos-head">
       <div class="grupos-head-title">
         <h2>Importações recentes</h2>
@@ -63,20 +63,20 @@
   }
 
   <!-- Step 1b: Tela de upload -->
-  @if (step === 'importar') {
+  @if (etapa === 'importar') {
     <div class="card">
       <h2>Nova importação</h2>
       <mat-form-field appearance="outline" class="full">
         <mat-label>Nome do grupo (opcional)</mat-label>
-        <input matInput [(ngModel)]="importarNome" placeholder="Ex.: Clientes vencimento 05/2026">
+        <input matInput [(ngModel)]="nomeImportacao" placeholder="Ex.: Clientes vencimento 05/2026">
       </mat-form-field>
 
       <div
         class="drop"
-        [class.on]="dragging"
-        (dragover)="$event.preventDefault(); dragging = true"
-        (dragleave)="dragging = false"
-        (drop)="drop($event)"
+        [class.on]="arrastando"
+        (dragover)="$event.preventDefault(); arrastando = true"
+        (dragleave)="arrastando = false"
+        (drop)="soltarArquivo($event)"
       >
         <span class="material-symbols-outlined">upload_file</span>
         @if (!arquivoSelecionado) {
@@ -85,7 +85,7 @@
             >ou
             <label>
               selecione o arquivo
-              <input type="file" accept=".csv,.xlsx,.xls" [disabled]="importando" hidden (change)="pick($event)" />
+              <input type="file" accept=".csv,.xlsx,.xls" [disabled]="importando" hidden (change)="selecionarArquivoNoCampo($event)" />
             </label>
           </span>
         }
@@ -124,14 +124,14 @@
   }
 
   <!-- Step 2: Detalhe do grupo + setup template -->
-  @if (step === 'detalhe' && detalhe) {
+  @if (etapa === 'detalhe' && detalhe) {
     <div class="card setup">
       <div class="grupo-head">
         <div>
           <h2>{{ detalhe.grupo.nome || detalhe.grupo.arquivo_nome || ('Grupo #' + detalhe.grupo.id) }}</h2>
           <div class="muted">{{ detalhe.total }} contato{{ detalhe.total === 1 ? '' : 's' }} · {{ detalhe.grupo.created_at | date: 'dd/MM/yyyy HH:mm' }}</div>
         </div>
-        <button mat-stroked-button (click)="step = 'grupos'">
+        <button mat-stroked-button (click)="etapa = 'grupos'">
           <span class="material-symbols-outlined">arrow_back</span>
           Todos os grupos
         </button>
@@ -155,7 +155,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Por página</mat-label>
-        <mat-select [(ngModel)]="perPage" (selectionChange)="page = 1; carregarDetalhe()">
+        <mat-select [(ngModel)]="itensPorPagina" (selectionChange)="pagina = 1; carregarDetalhe()">
           <mat-option [value]="10">10</mat-option>
           <mat-option [value]="20">20</mat-option>
           <mat-option [value]="50">50</mat-option>
@@ -183,8 +183,8 @@
                   [class.dup]="c.status_validacao === 'DUPLICADO'"
                 >
                   <td>
-                    <span class="badge" [class]="statusBadge(c.status_validacao)">
-                      {{ statusText(c.status_validacao) }}
+                    <span class="badge" [class]="classeStatus(c.status_validacao)">
+                      {{ textoStatus(c.status_validacao) }}
                     </span>
                   </td>
                   <td>{{ c.nome || '-' }}</td>
@@ -219,17 +219,17 @@
         </div>
 
         <div class="paginator">
-          <button mat-stroked-button [disabled]="page <= 1" (click)="mudarPagina(page - 1)">Anterior</button>
-          <span class="muted">Página {{ page }} de {{ totalPaginas() }} · {{ detalhe.total }} registros</span>
-          <button mat-stroked-button [disabled]="page >= totalPaginas()" (click)="mudarPagina(page + 1)">Próxima</button>
+          <button mat-stroked-button [disabled]="pagina <= 1" (click)="mudarPagina(pagina - 1)">Anterior</button>
+          <span class="muted">Página {{ pagina }} de {{ totalPaginas() }} · {{ detalhe.total }} registros</span>
+          <button mat-stroked-button [disabled]="pagina >= totalPaginas()" (click)="mudarPagina(pagina + 1)">Próxima</button>
         </div>
       </div>
 
       <mat-form-field appearance="outline">
         <mat-label>Enviar de</mat-label>
-        <mat-select [(ngModel)]="instance">
-          @for (account of wa.conectadas(); track account.instance) {
-            <mat-option [value]="account.instance">{{ account.number || account.instance }}</mat-option>
+        <mat-select [(ngModel)]="instancia">
+          @for (conta of wa.conectadas(); track conta.instance) {
+            <mat-option [value]="conta.instance">{{ conta.number || conta.instance }}</mat-option>
           }
           @if (wa.conectadas().length === 0) {
             <mat-option value="meu-whatsapp">meu-whatsapp (padrão)</mat-option>
@@ -239,10 +239,10 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Template</mat-label>
-        <mat-select [(ngModel)]="templateId" (selectionChange)="onTemplate()">
+        <mat-select [(ngModel)]="idModelo" (selectionChange)="aoSelecionarModelo()">
           <mat-option [value]="null">Nenhum (mensagem livre)</mat-option>
-          @for (item of templates; track item.id) {
-            <mat-option [value]="item.id">{{ item.nome }}</mat-option>
+          @for (modelo of modelos; track modelo.id) {
+            <mat-option [value]="modelo.id">{{ modelo.nome }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -254,13 +254,13 @@
 
       <div class="preview full">
         <strong>Prévia com o primeiro contato válido</strong>
-        <pre>{{ preview() }}</pre>
+        <pre>{{ visualizarMensagem() }}</pre>
       </div>
 
       <mat-form-field appearance="outline">
         <mat-label>Intervalo entre mensagens</mat-label>
         <mat-select [(ngModel)]="intervalo">
-          @for (ms of intervals; track ms) {
+          @for (ms of opcoesIntervalo; track ms) {
             <mat-option [value]="ms">{{ ms / 1000 }} segundo{{ ms === 1000 ? '' : 's' }}</mat-option>
           }
           <mat-option [value]="0">Personalizado</mat-option>
@@ -270,7 +270,7 @@
       @if (intervalo === 0) {
         <mat-form-field appearance="outline">
           <mat-label>Intervalo (ms)</mat-label>
-          <input matInput type="number" min="1000" [(ngModel)]="customIntervalo" />
+          <input matInput type="number" min="1000" [(ngModel)]="intervaloPersonalizado" />
         </mat-form-field>
       }
 
@@ -278,7 +278,7 @@
         <button
           mat-flat-button
           class="cta"
-          [disabled]="!mensagem || detalhe.grupo.validos === 0 || !instance"
+          [disabled]="!mensagem || detalhe.grupo.validos === 0 || !instancia"
           (click)="iniciarDisparo()"
         >
           <span class="material-symbols-outlined">send</span>
@@ -288,12 +288,12 @@
     </div>
   }
 
-  @if (step === 'detalhe' && !detalhe && carregando) {
+  @if (etapa === 'detalhe' && !detalhe && carregando) {
     <div class="card empty"><span class="material-symbols-outlined spin">progress_activity</span> Carregando...</div>
   }
 
   <!-- Step 3: Run -->
-  @if (step === 'run') {
+  @if (etapa === 'run') {
     <div class="card">
       <h2>
         {{
@@ -306,8 +306,8 @@
                 : 'Disparo concluído'
         }}
       </h2>
-      @if (pausedMessage) {
-        <p class="erro">{{ pausedMessage }}</p>
+      @if (mensagemPausado) {
+        <p class="erro">{{ mensagemPausado }}</p>
       }
       <div class="stats">
         <div class="stat"><b>{{ envio?.total || 0 }}</b><span>Total</span></div>
@@ -317,9 +317,9 @@
       </div>
       <div class="actions">
         @if (envio?.status === 'EM_ANDAMENTO') {
-          <button mat-stroked-button color="warn" (click)="stop()">Parar disparo</button>
+          <button mat-stroked-button color="warn" (click)="pararDisparo()">Parar disparo</button>
         }
-        <button mat-stroked-button (click)="step = 'detalhe'">Voltar para o grupo</button>
+        <button mat-stroked-button (click)="etapa = 'detalhe'">Voltar para o grupo</button>
       </div>
     </div>
     <div class="card table-card">
@@ -335,34 +335,34 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of detalhes; track item.id) {
+            @for (detalheEnvio of detalhes; track detalheEnvio.id) {
               <tr
-                [class.ok]="item.status === 'ENVIADO'"
-                [class.err]="item.status === 'ERRO'"
-                [class.warn]="item.status === 'ENVIANDO' || item.status === 'PENDENTE'"
+                [class.ok]="detalheEnvio.status === 'ENVIADO'"
+                [class.err]="detalheEnvio.status === 'ERRO'"
+                [class.warn]="detalheEnvio.status === 'ENVIANDO' || detalheEnvio.status === 'PENDENTE'"
               >
-                <td>{{ item.nome }}</td>
-                <td>{{ item.telefone }}</td>
+                <td>{{ detalheEnvio.nome }}</td>
+                <td>{{ detalheEnvio.telefone }}</td>
                 <td>
                   <span
                     class="badge"
-                    [class.ok]="item.status === 'ENVIADO'"
-                    [class.err]="item.status === 'ERRO'"
-                    [class.warn]="item.status !== 'ENVIADO' && item.status !== 'ERRO'"
+                    [class.ok]="detalheEnvio.status === 'ENVIADO'"
+                    [class.err]="detalheEnvio.status === 'ERRO'"
+                    [class.warn]="detalheEnvio.status !== 'ENVIADO' && detalheEnvio.status !== 'ERRO'"
                   >
                     {{
-                      item.status === 'ENVIADO'
+                      detalheEnvio.status === 'ENVIADO'
                         ? 'Enviado'
-                        : item.status === 'ERRO'
+                        : detalheEnvio.status === 'ERRO'
                           ? 'Erro'
-                          : item.status === 'ENVIANDO'
+                          : detalheEnvio.status === 'ENVIANDO'
                             ? 'Enviando'
                             : 'Pendente'
                     }}
                   </span>
                 </td>
-                <td>{{ hour(item.enviado_em) }}</td>
-                <td>{{ item.erro || '-' }}</td>
+                <td>{{ formatarHora(detalheEnvio.enviado_em) }}</td>
+                <td>{{ detalheEnvio.erro || '-' }}</td>
               </tr>
             }
           </tbody>
