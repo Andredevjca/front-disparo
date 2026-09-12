@@ -36,6 +36,18 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Configuração da API após o build
+
+O endereço da API fica no arquivo `config.json`, copiado para a raiz do build (`dist/frontend/browser/config.json`). Edite esse arquivo depois do build e antes de publicar no IIS:
+
+```json
+{
+	"apiUrl": "https://seu-servidor-api.exemplo.com"
+}
+```
+
+Deixe `apiUrl` vazio para usar a mesma origem do frontend, por exemplo durante o desenvolvimento com o proxy local. Não é necessário gerar o build novamente ao trocar apenas esse arquivo.
+
 ## Running unit tests
 
 To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
