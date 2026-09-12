@@ -1,0 +1,373 @@
+<section>
+  <div class="page-head">
+    <h1>Enviar em Massa</h1>
+    <p>Importe a planilha (CSV/XLSX), visualize os contatos salvos no banco, escolha o template e dispare.</p>
+  </div>
+
+  @if (erro) {
+    <div class="alerta erro">{{ erro }}</div>
+  }
+
+  <div class="steps">
+    <div class="step" [class.on]="etapa === 'grupos' || etapa === 'importar'"><span class="n">1</span> Grupos</div>
+    <div class="step" [class.on]="etapa === 'detalhe'"><span class="n">2</span> Contatos / Template</div>
+    <div class="step" [class.on]="etapa === 'run'"><span class="n">3</span> Disparo</div>
+  </div>
+
+  <!-- Step 1: Lista de grupos + botao novo -->
+  @if (etapa === 'grupos') {
+    <div class="card grupos-head">
+      <div class="grupos-head-title">
+        <h2>Importações recentes</h2>
+        <span class="muted">{{ grupos.length }} grupo{{ grupos.length === 1 ? '' : 's' }}</span>
+      </div>
+      <button mat-flat-button class="cta" (click)="irParaImportar()">
+        <span class="material-symbols-outlined">add</span>
+        Nova importação
+      </button>
+    </div>
+
+    @if (grupos.length === 0) {
+      <div class="card empty">
+        <span class="material-symbols-outlined">folder_open</span>
+        <b>Nenhuma planilha importada ainda.</b>
+        <span>Clique em "Nova importação" para enviar um CSV ou XLSX.</span>
+      </div>
+    }
+
+    @for (g of grupos; track g.id) {
+      <div class="card grupo-row" [class.selected]="grupoSelecionado?.id === g.id">
+        <div class="grupo-info">
+          <div class="grupo-title">
+            <b>{{ g.nome || g.arquivo_nome || ('Grupo #' + g.id) }}</b>
+            @if (g.arquivo_nome) {
+              <span class="muted file">({{ g.arquivo_nome }})</span>
+            }
+          </div>
+          <div class="grupo-meta muted">
+            {{ g.created_at | date: 'dd/MM/yyyy HH:mm' }}
+          </div>
+          <div class="stats mini">
+            <div class="stat"><b>{{ g.total_linhas }}</b><span>Total</span></div>
+            <div class="stat"><b class="ok">{{ g.validos }}</b><span>Válidos</span></div>
+            <div class="stat"><b class="err">{{ g.invalidos }}</b><span>Inválidos</span></div>
+            <div class="stat"><b class="dup">{{ g.duplicados }}</b><span>Duplicados</span></div>
+          </div>
+        </div>
+        <div class="grupo-actions">
+          <button mat-stroked-button (click)="abrirGrupo(g)">Abrir</button>
+          <button mat-stroked-button color="warn" (click)="excluirGrupo(g)">Excluir</button>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Step 1b: Tela de upload -->
+  @if (etapa === 'importar') {
+    <div class="card">
+      <h2>Nova importação</h2>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Nome do grupo (opcional)</mat-label>
+        <input matInput [(ngModel)]="nomeImportacao" placeholder="Ex.: Clientes vencimento 05/2026">
+      </mat-form-field>
+
+      <div
+        class="drop"
+        [class.on]="arrastando"
+        (dragover)="$event.preventDefault(); arrastando = true"
+        (dragleave)="arrastando = false"
+        (drop)="soltarArquivo($event)"
+      >
+        <span class="material-symbols-outlined">upload_file</span>
+        @if (!arquivoSelecionado) {
+          <b>Arraste um CSV ou XLSX</b>
+          <span
+            >ou
+            <label>
+              selecione o arquivo
+              <input type="file" accept=".csv,.xlsx,.xls" [disabled]="importando" hidden (change)="selecionarArquivoNoCampo($event)" />
+            </label>
+          </span>
+        }
+        @if (arquivoSelecionado) {
+          <div class="file-preview">
+            <b>{{ arquivoSelecionado.name }}</b>
+            <span class="muted">{{ (arquivoSelecionado.size / 1024).toFixed(1) }} KB</span>
+            <button mat-stroked-button type="button" class="small" (click)="limparArquivo()" [disabled]="importando">
+              Trocar arquivo
+            </button>
+          </div>
+        }
+        @if (importando) {
+          <div class="progress">Importando e salvando no banco... aguarde.</div>
+        }
+      </div>
+
+      <ul class="muted tips">
+        <li>Colunas reconhecidas automaticamente: <b>telefone</b>, <b>nome</b>, <b>email</b>.</li>
+        <li>Demais colunas são gravadas como campos extras e usadas na interpolação do template (ex.: <code>{{ '{{' }}valor{{ '}}' }}</code>).</li>
+      </ul>
+
+      <div class="actions">
+        <button mat-stroked-button (click)="cancelarImportar()" class="cta" [disabled]="importando">Voltar</button>
+        <button
+          mat-flat-button
+          class="cta"
+          (click)="confirmarImportar()"
+          [disabled]="!arquivoSelecionado || importando"
+        >
+          <span class="material-symbols-outlined">cloud_upload</span>
+          {{ importando ? 'Importando...' : 'Importar planilha' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Step 2: Detalhe do grupo + setup template -->
+  @if (etapa === 'detalhe' && detalhe) {
+    <div class="card setup">
+      <div class="grupo-head">
+        <div>
+          <h2>{{ detalhe.grupo.nome || detalhe.grupo.arquivo_nome || ('Grupo #' + detalhe.grupo.id) }}</h2>
+          <div class="muted">{{ detalhe.total }} contato{{ detalhe.total === 1 ? '' : 's' }} · {{ detalhe.grupo.created_at | date: 'dd/MM/yyyy HH:mm' }}</div>
+        </div>
+        <button mat-stroked-button (click)="etapa = 'grupos'">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Todos os grupos
+        </button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b>{{ detalhe.grupo.total_linhas }}</b><span>Total</span></div>
+        <div class="stat"><b class="ok">{{ detalhe.grupo.validos }}</b><span>Válidos</span></div>
+        <div class="stat"><b class="err">{{ detalhe.grupo.invalidos }}</b><span>Inválidos</span></div>
+        <div class="stat"><b class="dup">{{ detalhe.grupo.duplicados }}</b><span>Duplicados</span></div>
+        <div class="stat"><b>{{ detalhe.grupo.validos }}</b><span>Serão enviados</span></div>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Buscar contato</mat-label>
+        <input matInput [(ngModel)]="busca" (keyup.enter)="buscar()" placeholder="Nome, email ou telefone" />
+        <button mat-icon-button matSuffix (click)="buscar()" aria-label="Buscar">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Por página</mat-label>
+        <mat-select [(ngModel)]="itensPorPagina" (selectionChange)="pagina = 1; carregarDetalhe()">
+          <mat-option [value]="10">10</mat-option>
+          <mat-option [value]="20">20</mat-option>
+          <mat-option [value]="50">50</mat-option>
+          <mat-option [value]="100">100</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="table-card card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Extras</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of detalhe.contatos; track c.id) {
+                <tr
+                  [class.ok]="c.status_validacao === 'VALIDO'"
+                  [class.err]="c.status_validacao === 'INVALIDO'"
+                  [class.dup]="c.status_validacao === 'DUPLICADO'"
+                >
+                  <td>
+                    <span class="badge" [class]="classeStatus(c.status_validacao)">
+                      {{ textoStatus(c.status_validacao) }}
+                    </span>
+                  </td>
+                  <td>{{ c.nome || '-' }}</td>
+                  <td>{{ c.email || '-' }}</td>
+                  <td>
+                    @if (c.telefone_normalizado) {
+                      <span class="tel">{{ c.telefone_normalizado }}</span>
+                    } @else {
+                      <span class="muted">{{ c.telefone_original || '-' }}</span>
+                    }
+                  </td>
+                  <td>
+                    @if (dadosExtras(c).length === 0) {
+                      <span class="muted">-</span>
+                    } @else {
+                      <div class="extras">
+                        @for (kv of dadosExtras(c); track kv[0]) {
+                          <span class="chip"><b>{{ kv[0] }}:</b> {{ kv[1] }}</span>
+                        }
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
+              @if (detalhe.contatos.length === 0) {
+                <tr>
+                  <td colspan="5" class="muted center">Nenhum contato encontrado.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="paginator">
+          <button mat-stroked-button [disabled]="pagina <= 1" (click)="mudarPagina(pagina - 1)">Anterior</button>
+          <span class="muted">Página {{ pagina }} de {{ totalPaginas() }} · {{ detalhe.total }} registros</span>
+          <button mat-stroked-button [disabled]="pagina >= totalPaginas()" (click)="mudarPagina(pagina + 1)">Próxima</button>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Enviar de</mat-label>
+        <mat-select [(ngModel)]="instancia">
+          @for (conta of wa.conectadas(); track conta.instance) {
+            <mat-option [value]="conta.instance">{{ conta.number || conta.instance }}</mat-option>
+          }
+          @if (wa.conectadas().length === 0) {
+            <mat-option value="meu-whatsapp">meu-whatsapp (padrão)</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Template</mat-label>
+        <mat-select [(ngModel)]="idModelo" (selectionChange)="aoSelecionarModelo()">
+          <mat-option [value]="null">Nenhum (mensagem livre)</mat-option>
+          @for (modelo of modelos; track modelo.id) {
+            <mat-option [value]="modelo.id">{{ modelo.nome }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Mensagem</mat-label>
+        <textarea matInput rows="6" [(ngModel)]="mensagem" placeholder="Use {{ '{{' }}nome{{ '}}' }}, {{ '{{' }}valor{{ '}}' }}, etc"></textarea>
+      </mat-form-field>
+
+      <div class="preview full">
+        <strong>Prévia com o primeiro contato válido</strong>
+        <pre>{{ visualizarMensagem() }}</pre>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Intervalo entre mensagens</mat-label>
+        <mat-select [(ngModel)]="intervalo">
+          @for (ms of opcoesIntervalo; track ms) {
+            <mat-option [value]="ms">{{ ms / 1000 }} segundo{{ ms === 1000 ? '' : 's' }}</mat-option>
+          }
+          <mat-option [value]="0">Personalizado</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (intervalo === 0) {
+        <mat-form-field appearance="outline">
+          <mat-label>Intervalo (ms)</mat-label>
+          <input matInput type="number" min="1000" [(ngModel)]="intervaloPersonalizado" />
+        </mat-form-field>
+      }
+
+      <div class="actions full">
+        <button
+          mat-flat-button
+          class="cta"
+          [disabled]="!mensagem || detalhe.grupo.validos === 0 || !instancia"
+          (click)="iniciarDisparo()"
+        >
+          <span class="material-symbols-outlined">send</span>
+          Começar disparo ({{ detalhe.grupo.validos }} válidos)
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (etapa === 'detalhe' && !detalhe && carregando) {
+    <div class="card empty"><span class="material-symbols-outlined spin">progress_activity</span> Carregando...</div>
+  }
+
+  <!-- Step 3: Run -->
+  @if (etapa === 'run') {
+    <div class="card">
+      <h2>
+        {{
+          envio?.status === 'EM_ANDAMENTO'
+            ? 'Enviando mensagens...'
+            : envio?.status === 'PARADO'
+              ? 'Disparo interrompido'
+              : envio?.status === 'PAUSADO'
+                ? 'Disparo pausado'
+                : 'Disparo concluído'
+        }}
+      </h2>
+      @if (mensagemPausado) {
+        <p class="erro">{{ mensagemPausado }}</p>
+      }
+      <div class="stats">
+        <div class="stat"><b>{{ envio?.total || 0 }}</b><span>Total</span></div>
+        <div class="stat"><b class="ok">{{ envio?.enviados || 0 }}</b><span>Enviadas</span></div>
+        <div class="stat"><b class="err">{{ envio?.erros || 0 }}</b><span>Erros</span></div>
+        <div class="stat"><b>{{ envio?.pendentes || 0 }}</b><span>Pendentes</span></div>
+      </div>
+      <div class="actions">
+        @if (envio?.status === 'EM_ANDAMENTO') {
+          <button mat-stroked-button color="warn" (click)="pararDisparo()">Parar disparo</button>
+        }
+        <button mat-stroked-button (click)="etapa = 'detalhe'">Voltar para o grupo</button>
+      </div>
+    </div>
+    <div class="card table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Status</th>
+              <th>Horário</th>
+              <th>Erro</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (detalheEnvio of detalhes; track detalheEnvio.id) {
+              <tr
+                [class.ok]="detalheEnvio.status === 'ENVIADO'"
+                [class.err]="detalheEnvio.status === 'ERRO'"
+                [class.warn]="detalheEnvio.status === 'ENVIANDO' || detalheEnvio.status === 'PENDENTE'"
+              >
+                <td>{{ detalheEnvio.nome }}</td>
+                <td>{{ detalheEnvio.telefone }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.ok]="detalheEnvio.status === 'ENVIADO'"
+                    [class.err]="detalheEnvio.status === 'ERRO'"
+                    [class.warn]="detalheEnvio.status !== 'ENVIADO' && detalheEnvio.status !== 'ERRO'"
+                  >
+                    {{
+                      detalheEnvio.status === 'ENVIADO'
+                        ? 'Enviado'
+                        : detalheEnvio.status === 'ERRO'
+                          ? 'Erro'
+                          : detalheEnvio.status === 'ENVIANDO'
+                            ? 'Enviando'
+                            : 'Pendente'
+                    }}
+                  </span>
+                </td>
+                <td>{{ formatarHora(detalheEnvio.enviado_em) }}</td>
+                <td>{{ detalheEnvio.erro || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,9 @@
+export type GrupoImportacao = { id: number; usuario_id: number; nome: string | null; arquivo_nome: string | null; total_linhas: number; validos: number; invalidos: number; duplicados: number; created_at: string; };
+export type StatusValidacaoContato = 'VALIDO' | 'INVALIDO' | 'DUPLICADO';
+export type ContatoImportado = { id: number; grupo_id: number; nome: string | null; email: string | null; telefone_normalizado: string | null; telefone_original: string | null; dados: Record<string, unknown> | null; status_validacao: StatusValidacaoContato; created_at: string; };
+export type RespostaImportacao = { grupo_id: number; total: number; validos: number; invalidos: number; duplicados: number; };
+export type DetalheGrupoPaginado = { grupo: GrupoImportacao; contatos: ContatoImportado[]; page: number; perPage: number; total: number; };
+export type Envio = { id: number; tipo: string; template_nome: string | null; intervalo_ms: number | null; total: number; enviados: number; erros: number; pendentes: number; status: string; instancia?: string | null; numero_origem?: string | null; };
+export type DetalheEnvio = { id: number; envio_id: number; nome: string | null; telefone: string; mensagem: string; status: string; erro: string | null; created_at: string; enviado_em: string | null; };
+export type DadosDisparoMassa = { idModelo?: number | null; nomeModelo?: string | null; mensagem?: string | null; intervaloMs?: number | null; instancia?: string; };
+export type RespostaDisparoMassa = { id: number };

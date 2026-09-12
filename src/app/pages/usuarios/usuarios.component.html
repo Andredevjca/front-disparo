@@ -1,0 +1,68 @@
+<section>
+  <div class="page-head">
+    <div>
+      <h1>Usuários</h1>
+      <p>Gerencie os acessos ao painel de disparos.</p>
+    </div>
+    <button mat-flat-button class="cta" (click)="cancelarEdicao()" [disabled]="!usuarioEmEdicao && !nome && !email && !senha">{{ usuarioEmEdicao ? 'Limpar edição' : 'Novo Usuário' }}</button>
+  </div>
+
+  @if (erro) { <div class="msg erro">{{ erro }}</div> }
+  @if (sucesso) { <div class="msg ok">{{ sucesso }}</div> }
+
+  <div class="grid">
+    <form class="card" (ngSubmit)="salvarUsuario()">
+      <h2>{{ usuarioEmEdicao ? 'Editar Usuário' : 'Novo Usuário' }}</h2>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Nome</mat-label>
+        <input matInput [(ngModel)]="nome" name="nome">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>E-mail</mat-label>
+        <input matInput [(ngModel)]="email" name="email" type="email" required>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>{{ usuarioEmEdicao ? 'Senha (deixe em branco para manter)' : 'Senha' }}</mat-label>
+        <input matInput [(ngModel)]="senha" name="senha" type="password" [required]="!usuarioEmEdicao">
+      </mat-form-field>
+      <div class="actions">
+        <button mat-flat-button class="cta">{{ usuarioEmEdicao ? 'Salvar' : 'Criar usuário' }}</button>
+        @if (usuarioEmEdicao) { <button mat-button type="button" (click)="cancelarEdicao()">Cancelar</button> }
+      </div>
+    </form>
+
+    <div class="list">
+      @if (!usuarios.length) {
+        <div class="card empty">Nenhum usuário cadastrado.</div>
+      } @else {
+        <div class="card tabela">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Perfil</th>
+                <th>Criado em</th>
+                <th class="acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (usuario of usuarios; track usuario.id) {
+                <tr>
+                  <td>{{ usuario.nome || '—' }}</td>
+                  <td>{{ usuario.email }}</td>
+                  <td><span class="badge">{{ usuario.role }}</span></td>
+                  <td>{{ usuario.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="acoes">
+                    <button mat-button (click)="editarUsuario(usuario)">Editar</button>
+                    <button mat-button color="warn" (click)="excluirUsuario(usuario)">Excluir</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</section>

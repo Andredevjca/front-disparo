@@ -1,0 +1,149 @@
+<section>
+  <div class="page-head">
+    <div>
+      <h1>Histórico</h1>
+      <p>Quem recebeu, de qual número saiu, status e horário de cada mensagem.</p>
+    </div>
+    <div class="head-stats">
+      <div class="stat">
+        <b>{{ totalRegistros }}</b>
+        <span>Total de registros</span>
+      </div>
+    </div>
+  </div>
+
+  <form class="filters card" (ngSubmit)="buscarRegistros(1)">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>De</mat-label>
+      <input matInput type="date" [(ngModel)]="de" name="de">
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Até</mat-label>
+      <input matInput type="date" [(ngModel)]="ate" name="ate">
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Status</mat-label>
+      <mat-select [(ngModel)]="status" name="status">
+        @for (opcao of opcoesStatus; track opcao.value) {
+          <mat-option [value]="opcao.value">{{ opcao.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Instância</mat-label>
+      <input matInput [(ngModel)]="instancia" name="instancia" placeholder="meu-whatsapp">
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="grow" subscriptSizing="dynamic">
+      <mat-label>Telefone</mat-label>
+      <input matInput [(ngModel)]="telefone" name="telefone">
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="grow" subscriptSizing="dynamic">
+      <mat-label>Nome</mat-label>
+      <input matInput [(ngModel)]="nome" name="nome">
+    </mat-form-field>
+    <div class="filter-btns">
+      <button type="submit" mat-flat-button class="cta">Filtrar</button>
+      <button type="button" mat-stroked-button class="cta" (click)="limpar()">Limpar</button>
+    </div>
+  </form>
+
+  <div class="card table-card">
+      @if (carregando) {
+        <div class="empty"><span class="material-symbols-outlined spin">progress_activity</span> Carregando...</div>
+      } @else if (registros.length === 0) {
+        <div class="empty">Nenhum envio encontrado para esses filtros.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Origem</th>
+                <th>Tipo</th>
+                <th>Template</th>
+                <th>Mensagem</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (registro of registros; track registro.id) {
+                <tr
+                  [class.ok]="registro.status === 'ENVIADO'"
+                  [class.err]="registro.status === 'ERRO'"
+                  (click)="abrirDetalhes(registro, detalhesEnvio)"
+                >
+                  <td>{{ formatarData(registro) }}</td>
+                  <td>{{ registro.nome || '—' }}</td>
+                  <td class="tel">{{ registro.telefone }}</td>
+                  <td>{{ registro.numero_origem || registro.instancia || '—' }}</td>
+                  <td>{{ tipo(registro.tipo) }}</td>
+                  <td>{{ registro.template_nome || '—' }}</td>
+                  <td class="msg" [title]="registro.mensagem">{{ registro.mensagem }}</td>
+                  <td class="status-cell">
+                    @if (registro.status === 'ENVIADO') {
+                      <span class="material-symbols-outlined status-icon ok" matTooltip="Enviado">check_circle</span>
+                    } @else if (registro.status === 'ERRO') {
+                      <span class="material-symbols-outlined status-icon err" matTooltip="Erro">error</span>
+                    } @else {
+                      <span class="badge" [class]="classeStatus(registro.status)">{{ textoStatus(registro.status) }}</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="paginator">
+          <mat-form-field appearance="outline" class="per-page">
+            <mat-label>Página</mat-label>
+            <mat-select [value]="itensPorPagina" (valueChange)="itensPorPagina = $event; buscarRegistros(1)">
+              @for (n of opcoesItensPorPagina; track n) {
+                <mat-option [value]="n">{{ n }} / página</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-stroked-button [disabled]="pagina <= 1 || carregando" (click)="mudarPagina(pagina - 1)">Anterior</button>
+          <span class="muted">Página {{ pagina }} de {{ totalPaginas() }} · {{ totalRegistros }} no total</span>
+          <button mat-stroked-button [disabled]="pagina >= totalPaginas() || carregando" (click)="mudarPagina(pagina + 1)">Próxima</button>
+        </div>
+      }
+  </div>
+
+  <ng-template #detalhesEnvio let-modal>
+    @if (registroSelecionado) {
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-detalhes-envio-titulo">Detalhes do envio #{{ registroSelecionado.id }}</h2>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body detail">
+        <div class="detail-grid">
+          <p><span>Nome</span>{{ registroSelecionado.nome || '—' }}</p>
+          <p><span>Telefone</span>{{ registroSelecionado.telefone }}</p>
+          <p><span>Número origem</span>{{ registroSelecionado.numero_origem || registroSelecionado.instancia || '—' }}</p>
+          <p><span>Instância</span>{{ registroSelecionado.instancia || '—' }}</p>
+          <p><span>Tipo</span>{{ tipo(registroSelecionado.tipo) }}</p>
+          <p><span>Grupo import.</span>{{ registroSelecionado.grupo_importacao_id ?? '—' }}</p>
+          <p><span>Template</span>{{ registroSelecionado.template_nome || '—' }}</p>
+          <p>
+            <span>Status</span>
+            <span class="badge inline" [class]="classeStatus(registroSelecionado.status)">{{ textoStatus(registroSelecionado.status) }}</span>
+          </p>
+          <p><span>Criado em</span>{{ formatarData(registroSelecionado) }}</p>
+          @if (registroSelecionado.enviado_em) {
+            <p><span>Enviado em</span>{{ formatarData(registroSelecionado) }}</p>
+          }
+        </div>
+        @if (registroSelecionado.erro) {
+          <p class="erro"><span>Erro</span>{{ registroSelecionado.erro }}</p>
+        }
+        <div class="preview"><strong>Mensagem</strong><pre>{{ registroSelecionado.mensagem }}</pre></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" mat-stroked-button (click)="modal.close()">Fechar</button>
+      </div>
+    }
+  </ng-template>
+</section>

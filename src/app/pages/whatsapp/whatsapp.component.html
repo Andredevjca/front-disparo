@@ -1,0 +1,51 @@
+<section>
+  <div class="page-head">
+    <div>
+      <h1>WhatsApp</h1>
+      <p>Cada conta gera um QR Code. Dá para conectar vários números e, no envio, escolher de qual sai a mensagem.</p>
+    </div>
+  </div>
+  @if (erro) { <p class="erro">{{ erro }}</p> }
+
+  <form class="card add" (ngSubmit)="adicionarConta()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Nome da conta</mat-label>
+      <input matInput [(ngModel)]="nome" name="nome" placeholder="Ex.: Cobrança, Comercial">
+    </mat-form-field>
+    <button mat-flat-button class="cta" [disabled]="carregando">{{ carregando ? 'Criando...' : 'Adicionar conta' }}</button>
+  </form>
+
+  @if (qrcode) {
+    <div class="card qr-box">
+      <div>
+        <h2>Escaneie o QR Code</h2>
+        <p>Conta: {{ conectando }}</p>
+        <small>Abra o WhatsApp no celular e aponte a câmera. A tela atualiza sozinha.</small>
+      </div>
+      <img class="qr" [src]="qrcode" alt="QR Code do WhatsApp">
+    </div>
+  }
+
+  <div class="accounts">
+    @for (conta of wa.contas(); track conta.instance) {
+      <article class="card">
+        <span class="badge" [class.ok]="conta.connected" [class.err]="!conta.connected && conta.state !== 'connecting'" [class.warn]="conta.state === 'connecting'">
+          {{ conta.connected ? 'Conectado' : conta.state === 'connecting' ? 'Conectando' : 'Desconectado' }}
+        </span>
+        <h3>{{ conta.profileName || conta.instance }}</h3>
+        <p>Número: <b>{{ conta.number || '—' }}</b></p>
+        <p>Instância: {{ conta.instance }}</p>
+        <div class="actions">
+          @if (conta.connected) {
+            <button mat-stroked-button color="warn" (click)="desconectarConta(conta)">Desconectar</button>
+          } @else {
+            <button mat-flat-button (click)="conectarConta(conta)">Conectar</button>
+          }
+          <button mat-button color="warn" (click)="removerConta(conta)">Remover</button>
+        </div>
+      </article>
+    } @empty {
+      <div class="card empty">Nenhuma conta ainda. Adicione a primeira acima.</div>
+    }
+  </div>
+</section>

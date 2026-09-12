@@ -1,0 +1,51 @@
+:host { display: block; height: 100%; }
+
+.login {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #102017;
+}
+
+.panel {
+  width: min(920px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.intro {
+  background: #128c4a;
+  color: #fff;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #25d366;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+form { padding: 32px; }
+h2 { margin: 0 0 4px; }
+.sub { margin: 0 0 22px; color: var(--muted); }
+.erro { color: var(--red); margin-bottom: 12px; }
+.ok { color: #2e7d32; margin-bottom: 12px; }
+.full + .full { margin-top: 8px; }
+
+@media (max-width: 760px) {
+  .panel { grid-template-columns: 1fr; }
+  .intro { padding: 24px; }
+}
