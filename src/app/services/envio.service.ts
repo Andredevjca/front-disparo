@@ -4,11 +4,19 @@ import { DadosEnvioUnitario, ResultadoEnvioUnitario } from '../models/enviar.mod
 
 @Injectable({ providedIn: 'root' })
 export class ServicoEnvio {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient
+  ) {}
+
   enviar(body: DadosEnvioUnitario) {
-    return this.http.post<ResultadoEnvioUnitario>('/api/envios/unitario', {
-      telefone: body.telefone, nome: body.nome, mensagem: body.mensagem,
-      templateId: body.idModelo, templateNome: body.nomeModelo, instance: body.instancia,
-    });
+    const request = {
+      telefone: body.telefone,
+      nome: body.nome,
+      mensagem: body.mensagem,
+      templateId: body.idModelo,
+      templateNome: body.nomeModelo,
+      instance: body.instancia,
+    };
+    return this.http.post<ResultadoEnvioUnitario>('/api/envios/unitario', request);
   }
 }

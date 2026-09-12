@@ -8,18 +8,25 @@ export class ServicoAutenticacao {
   private readonly chaveToken = 'disparo_token';
   readonly email = signal<string | null>(null);
 
-  constructor(private http: HttpClient, private roteador: Router) {
+  constructor(
+    private http: HttpClient,
+    private roteador: Router
+  ) {
     if (this.obterToken()) this.email.set(localStorage.getItem('disparo_email'));
   }
 
   obterToken(): string | null { return localStorage.getItem(this.chaveToken); }
 
   entrar(email: string, senha: string) {
-    return this.http.post<{ token: string; email: string }>('/api/auth/fazer-login', { email, password: senha }).pipe(
+    const request = {
+      email,
+      password: senha,
+    };
+    return this.http.post<{ token: string }>('/api/auth/fazer-login', request).pipe(
       tap((resposta) => {
         localStorage.setItem(this.chaveToken, resposta.token);
-        localStorage.setItem('disparo_email', resposta.email);
-        this.email.set(resposta.email);
+        localStorage.setItem('disparo_email', email);
+        this.email.set(email);
       }),
     );
   }
