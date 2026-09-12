@@ -1,0 +1,163 @@
+<div class="atendimento">
+  <aside class="painel-lista">
+    <div class="cabecalho-lista">
+      <h2>Conversas</h2>
+      <small class="total-conversas">{{ totalConversas }} {{ totalConversas === 1 ? 'conversa' : 'conversas' }}</small>
+    </div>
+    <div class="sincronia">
+      <div class="sincronia-linha">
+        <span class="status-sincronia" [class.ok]="sincronia().status === 'OK'" [class.erro]="sincronia().status === 'ERRO'"
+              [class.andamento]="sincronia().status === 'EM_ANDAMENTO' || sincronia().status === 'DISPARADO'"
+              [matTooltip]="sincronia().erro ?? ''">
+          <mat-icon>
+            {{ sincronia().status === 'OK' ? 'check_circle' :
+               sincronia().status === 'ERRO' ? 'error' :
+               sincronia().status === 'EM_ANDAMENTO' || sincronia().status === 'DISPARADO' ? 'sync' : 'cloud_download' }}
+          </mat-icon>
+          {{ textoStatusSincronia() }}
+        </span>
+        <div class="botoes-sincronia">
+          <button mat-icon-button type="button" matTooltip="Buscar históricos do WhatsApp"
+                  [disabled]="sincroniaBloqueiaBotao || sincronia().status === 'EM_ANDAMENTO' || sincronia().status === 'DISPARADO'"
+                  (click)="dispararSincronia(false)">
+            <mat-icon>sync</mat-icon>
+          </button>
+          <button mat-icon-button type="button" matTooltip="Forçar re-sincronia completa (ignora cache)"
+                  [disabled]="sincroniaBloqueiaBotao"
+                  (click)="dispararSincronia(true)">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+      </div>
+      @if (sincronia().status === 'EM_ANDAMENTO' || sincronia().status === 'DISPARADO') {
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      }
+    </div>
+    <mat-form-field  appearance="outline" subscriptSizing="dynamic" class="busca">
+      <mat-label>Pesquisar por nome ou telefone</mat-label>
+      <input matInput type="search" placeholder="Pesquisar por nome ou telefone" [(ngModel)]="busca"
+             (ngModelChange)="aoAlterarBusca()" aria-label="Pesquisar conversas" />
+      @if (busca()) {
+        <button mat-icon-button matSuffix type="button" (click)="busca.set(''); aoAlterarBusca()" aria-label="Limpar busca">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+
+    <nav class="lista">
+      @if (conversas.length === 0) {
+        <div class="vazio">
+          <mat-icon>forum</mat-icon>
+          <p>{{ textoListaVazia() }}</p>
+          <small>{{ subTextoListaVazia() }}</small>
+        </div>
+      }
+      @for (c of conversas; track c.id) {
+        <button type="button"
+                class="item-conversa"
+                [class.selecionada]="conversaSelecionada && c.id === conversaSelecionadaId()"
+                [class.com-nao-lidas]="c.mensagens_nao_lidas > 0"
+                (click)="selecionarConversa(c)">
+          <div class="avatar">{{ avatarLetra(c.nome_whatsapp || c.nome, c.telefone) }}</div>
+          <div class="info">
+            <div class="linha-superior">
+              <span class="nome">{{ nomeConversa(c) }}</span>
+              <span class="hora">{{ formatarHoraConversa(c) }}</span>
+            </div>
+            <div class="linha-inferior">
+              <span class="ultima-msg" [class.negrito]="c.mensagens_nao_lidas > 0">
+                {{ c.ultima_mensagem || 'Sem mensagens' }}
+              </span>
+              @if (c.mensagens_nao_lidas > 0) {
+                <span class="badge-nao-lidas" [matTooltip]="c.mensagens_nao_lidas + ' não lida(s)'">
+                  {{ c.mensagens_nao_lidas > 99 ? '99+' : c.mensagens_nao_lidas }}
+                </span>
+              }
+            </div>
+          </div>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="painel-conversa">
+    @if (!conversaSelecionada) {
+      <div class="sem-conversa">
+        <mat-icon>chat_bubble</mat-icon>
+        <h3>Selecione uma conversa</h3>
+        <p>Atenda seus clientes respondendo diretamente por aqui.</p>
+      </div>
+    } @else {
+      @let c = conversaSelecionada!;
+      <header class="cabecalho-conversa">
+        <div class="avatar avatar-grande">{{ avatarLetra(c.nome_whatsapp || c.nome, c.telefone) }}</div>
+        <div class="info">
+          <h3>{{ nomeConversa(c) }}</h3>
+          @if (subNomeConversa(c)) { <small>{{ subNomeConversa(c) }}</small> }
+          <small class="instancia">Instância: {{ c.instancia }}</small>
+        </div>
+      </header>
+
+      <div class="atendimento-mensagens" (scroll)="aoRolarListaMensagens($event)">
+        @if (temMaisAntigas) {
+          <div class="carregar-mais">
+            <button mat-stroked-button type="button" (click)="carregarMaisAntigas()">
+              <mat-icon>arrow_upward</mat-icon>
+              Carregar mensagens anteriores
+            </button>
+          </div>
+        }
+        @if (mensagens.length === 0) {
+          <div class="sem-mensagens">
+            <mat-icon>sms</mat-icon>
+            <small>{{ textoSemMensagens() }}</small>
+          </div>
+        }
+        @for (m of mensagens; track m.id) {
+          <div class="bolha-linha" [class.enviada]="m.direcao === 'ENVIADA'" [class.recebida]="m.direcao === 'RECEBIDA'">
+            <div class="bolha"
+                 [class.bolha-enviada]="m.direcao === 'ENVIADA'"
+                 [class.bolha-recebida]="m.direcao === 'RECEBIDA'"
+                 [class.bolha-erro]="m.status === 'ERRO'">
+              <div class="conteudo-mensagem">
+                @if (m.conteudo) {
+                  <p>{{ m.conteudo }}</p>
+                } @else {
+                  <p class="sem-texto">[mensagem de mídia - não exibida]</p>
+                }
+              </div>
+              <div class="rodape-mensagem">
+                <span class="hora">{{ formatarHora(m) }}</span>
+                @if (m.direcao === 'ENVIADA') {
+                  <span class="status-mensagem {{ classeStatusMensagem(m) }}"
+                        [matTooltip]="m.status">
+                    {{ rotuloStatus(m) }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <footer class="composer">
+        <mat-form-field appearance="outline" class="input-mensagem">
+          <textarea matInput
+                    placeholder="Digite uma mensagem..."
+                    rows="1"
+                    [(ngModel)]="textoDigitado"
+                    (keydown)="enviarComEnter($event)"
+                    [disabled]="enviando"
+                    aria-label="Mensagem"></textarea>
+        </mat-form-field>
+        <button mat-fab type="button"
+                color="primary"
+                aria-label="Enviar mensagem"
+                [disabled]="enviando || !textoDigitado.trim()"
+                (click)="enviarMensagem()">
+          <mat-icon>{{ enviando ? 'hourglass_top' : 'send' }}</mat-icon>
+        </button>
+      </footer>
+    }
+  </section>
+</div>
