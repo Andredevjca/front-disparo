@@ -83,9 +83,9 @@
                   <td class="msg" [title]="registro.mensagem">{{ registro.mensagem }}</td>
                   <td class="status-cell">
                     @if (registro.status === 'ENVIADO') {
-                      <span class="material-symbols-outlined status-icon ok" title="Enviado" aria-label="Enviado">check_circle</span>
+                      <span class="material-symbols-outlined status-icon ok" matTooltip="Enviado">check_circle</span>
                     } @else if (registro.status === 'ERRO') {
-                      <span class="material-symbols-outlined status-icon err" title="Erro" aria-label="Erro">error</span>
+                      <span class="material-symbols-outlined status-icon err" matTooltip="Erro">error</span>
                     } @else {
                       <span class="badge" [class]="classeStatus(registro.status)">{{ textoStatus(registro.status) }}</span>
                     }
