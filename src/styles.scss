@@ -16,6 +16,14 @@
   --nav: 248px;
 }
 
+.status-icon {
+  vertical-align: middle;
+  font-size: 22px;
+}
+
+.status-icon.ok { color: #1b8a3e; }
+.status-icon.err { color: #d32f2f; }
+
 html {
   @include mat.theme((
     color: (

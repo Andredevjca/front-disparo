@@ -81,8 +81,14 @@
                   <td>{{ tipo(registro.tipo) }}</td>
                   <td>{{ registro.template_nome || '—' }}</td>
                   <td class="msg" [title]="registro.mensagem">{{ registro.mensagem }}</td>
-                  <td>
-                    <span class="badge" [class]="classeStatus(registro.status)">{{ textoStatus(registro.status) }}</span>
+                  <td class="status-cell">
+                    @if (registro.status === 'ENVIADO') {
+                      <span class="material-symbols-outlined status-icon ok" title="Enviado" aria-label="Enviado">check_circle</span>
+                    } @else if (registro.status === 'ERRO') {
+                      <span class="material-symbols-outlined status-icon err" title="Erro" aria-label="Erro">error</span>
+                    } @else {
+                      <span class="badge" [class]="classeStatus(registro.status)">{{ textoStatus(registro.status) }}</span>
+                    }
                   </td>
                 </tr>
               }
