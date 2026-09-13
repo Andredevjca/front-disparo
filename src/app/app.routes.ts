@@ -9,6 +9,7 @@ export const routes: Routes = [
     canActivate: [guardaAutenticacao],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'enviar' },
+      { path: 'atendimento', loadComponent: () => import('./pages/atendimento/atendimento.component').then((m) => m.AtendimentoComponent) },
       { path: 'whatsapp', loadComponent: () => import('./pages/whatsapp/whatsapp.component').then((m) => m.WhatsappComponent) },
       { path: 'templates', loadComponent: () => import('./pages/templates/templates.component').then((m) => m.TemplatesComponent) },
       { path: 'usuarios', loadComponent: () => import('./pages/usuarios/usuarios.component').then((m) => m.UsuariosComponent) },

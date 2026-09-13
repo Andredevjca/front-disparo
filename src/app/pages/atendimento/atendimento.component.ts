@@ -3,12 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ServicoAtendimento } from '../../services/atendimento.service';
 import { ServicoStatusAtendimento } from '../../services/status-atendimento.service';
+import { ServicoNotificacao } from '../../services/notificacao.service';
 import { Conversa, Mensagem, SincroniaStatus } from '../../models/atendimento.model';
 
 @Component({
@@ -18,10 +17,8 @@ import { Conversa, Mensagem, SincroniaStatus } from '../../models/atendimento.mo
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatIconModule,
     MatInputModule,
     MatTooltipModule,
-    MatProgressBarModule,
   ],
   templateUrl: './atendimento.component.html',
   styleUrl: './atendimento.component.scss',
@@ -29,6 +26,7 @@ import { Conversa, Mensagem, SincroniaStatus } from '../../models/atendimento.mo
 export class AtendimentoComponent implements OnInit, OnDestroy {
   private atendimento = inject(ServicoAtendimento);
   private statusAtendimento = inject(ServicoStatusAtendimento);
+  private notificacao = inject(ServicoNotificacao);
 
   busca = signal('');
   textoDigitado = '';
@@ -45,7 +43,6 @@ export class AtendimentoComponent implements OnInit, OnDestroy {
   });
   sincroniaBloqueiaBotao = false;
   private pollingHandle: number | null = null;
-  notificacao: any;
 
   get conversas() { return this.statusAtendimento.conversas(); }
   get totalConversas() { return this.statusAtendimento.totalConversas(); }
@@ -71,6 +68,7 @@ export class AtendimentoComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.statusAtendimento.iniciarLista('');
     this.atualizarStatusSincronia(true);
+    this.iniciarPolling();
   }
 
   ngOnDestroy(): void {
@@ -90,22 +88,29 @@ export class AtendimentoComponent implements OnInit, OnDestroy {
     this.atendimento.obterStatusSincronia().subscribe({
       next: (s) => {
         this.sincronia.set(s);
-        if (s.status === 'EM_ANDAMENTO' || s.status === 'DISPARADO') {
-          this.iniciarPolling();
-        } else {
-          this.pararPolling();
-          if (aposAtualizacaoDispararSeNecessario && s.status === 'PENDENTE') {
-            this.dispararSincronia(false);
-          }
+        if (s.status === 'PENDENTE' && aposAtualizacaoDispararSeNecessario) {
+          this.dispararSincronia(false);
         }
+        this.ajustarIntervaloPolling();
       },
-      error: () => this.pararPolling(),
+      error: () => {},
     });
   }
 
   iniciarPolling(): void {
     if (this.pollingHandle != null) return;
-    this.pollingHandle = window.setInterval(() => this.atualizarStatusSincronia(false), 2500);
+    this.pollingHandle = window.setInterval(() => this.atualizarStatusSincronia(false), 8000);
+  }
+
+  private ajustarIntervaloPolling(): void {
+    const s = this.sincronia()?.status;
+    const rapido = s === 'EM_ANDAMENTO' || s === 'DISPARADO';
+    const novoIntervalo = rapido ? 2500 : 8000;
+    const atual = this.pollingHandle;
+    if (atual != null) {
+      window.clearInterval(atual);
+      this.pollingHandle = window.setInterval(() => this.atualizarStatusSincronia(false), novoIntervalo);
+    }
   }
 
   dispararSincronia(forcar: boolean): void {
