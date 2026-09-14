@@ -40,6 +40,7 @@ export type ConversaPaginada = {
 };
 
 export type Mensagem = {
+  tem_imagem?: boolean;
   id: number;
   conversa_id: number;
   usuario_id?: number | null;

@@ -117,9 +117,10 @@
                  [class.bolha-recebida]="m.direcao === 'RECEBIDA'"
                  [class.bolha-erro]="m.status === 'ERRO'">
               <div class="conteudo-mensagem">
+                @if (m.tem_imagem) { <app-imagem-mensagem [conversaId]="m.conversa_id" [mensagemId]="m.id" /> }
                 @if (m.conteudo) {
                   <p>{{ m.conteudo }}</p>
-                } @else {
+                } @else if (!m.tem_imagem) {
                   <p class="sem-texto">[mensagem de mídia - não exibida]</p>
                 }
               </div>

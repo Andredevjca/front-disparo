@@ -1,4 +1,7 @@
-import { Component, OnDestroy, OnInit, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { Component, DestroyRef, OnDestroy, OnInit, effect, inject, signal } from '@angular/core';
+import { ImagemMensagemComponent } from '../../shared/imagem-mensagem/imagem-mensagem.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +16,7 @@ import { Conversa, Mensagem, SincroniaStatus } from '../../models/atendimento.mo
 @Component({
   selector: 'app-atendimento',
   imports: [
+    ImagemMensagemComponent,
     CommonModule,
     FormsModule,
     MatButtonModule,
@@ -25,6 +29,8 @@ import { Conversa, Mensagem, SincroniaStatus } from '../../models/atendimento.mo
 })
 export class AtendimentoComponent implements OnInit, OnDestroy {
   private atendimento = inject(ServicoAtendimento);
+  private destroyRef = inject(DestroyRef);
+  private consultandoSincronia = false;
   private statusAtendimento = inject(ServicoStatusAtendimento);
   private notificacao = inject(ServicoNotificacao);
 
@@ -67,7 +73,7 @@ export class AtendimentoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.statusAtendimento.iniciarLista('');
-    this.atualizarStatusSincronia(true);
+    this.atualizarStatusSincronia(false);
     this.iniciarPolling();
   }
 
@@ -85,12 +91,15 @@ export class AtendimentoComponent implements OnInit, OnDestroy {
   }
 
   atualizarStatusSincronia(aposAtualizacaoDispararSeNecessario = false): void {
-    this.atendimento.obterStatusSincronia().subscribe({
+    if (this.consultandoSincronia) return;
+    this.consultandoSincronia = true;
+    this.atendimento.obterStatusSincronia().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => { this.consultandoSincronia = false; })
+    ).subscribe({
       next: (s) => {
         this.sincronia.set(s);
-        if (s.status === 'PENDENTE' && aposAtualizacaoDispararSeNecessario) {
-          this.dispararSincronia(false);
-        }
+
         this.ajustarIntervaloPolling();
       },
       error: () => {},
