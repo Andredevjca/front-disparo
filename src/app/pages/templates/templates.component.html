@@ -14,12 +14,14 @@
         <textarea matInput rows="8" [(ngModel)]="mensagem" name="mensagem" required></textarea>
       </mat-form-field>
       <p class="hint">Variáveis: {{ '{{nome}}' }}, {{ '{{telefone}}' }}, {{ '{{valor}}' }} ou qualquer coluna da planilha.</p>
+      <app-imagem-envio [imagem]="imagem" [disabled]="salvando" (imagemChange)="imagem = $event" (pendenteChange)="imagemPendente = $event" />
+      @if (erro) { <p role="alert">{{ erro }}</p> }
       <div class="preview">
         <strong>Prévia</strong>
         <pre>{{ visualizarMensagem() }}</pre>
       </div>
       <div class="actions">
-        <button mat-flat-button class="cta">{{ modeloEmEdicao ? 'Salvar' : 'Criar template' }}</button>
+        <button mat-flat-button class="cta" [disabled]="salvando || imagemPendente || !nome.trim() || !mensagem.trim()">{{ modeloEmEdicao ? 'Salvar' : 'Criar template' }}</button>
         @if (modeloEmEdicao) { <button mat-button type="button" (click)="cancelarEdicao()">Cancelar</button> }
       </div>
     </form>
@@ -30,6 +32,7 @@
       @for (modelo of modelos; track modelo.id) {
         <article class="card">
           <h3>{{ modelo.nome }}</h3>
+          @if (modelo.imagem) { <p>📷 Com imagem</p> }
           <pre>{{ modelo.mensagem }}</pre>
           <div class="actions">
             <button mat-flat-button (click)="usarModelo(modelo)">Usar</button>

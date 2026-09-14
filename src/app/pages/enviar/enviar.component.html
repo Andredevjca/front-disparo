@@ -40,9 +40,10 @@
       </div>
       <mat-form-field appearance="outline">
         <mat-label>Mensagem</mat-label>
-        <textarea matInput rows="8" [(ngModel)]="mensagem" name="mensagem" required></textarea>
+        <textarea matInput rows="8" [(ngModel)]="mensagem" name="mensagem" [required]="!imagem"></textarea>
       </mat-form-field>
-      <button mat-flat-button class="cta" [disabled]="carregando || !instancia">{{ carregando ? 'Enviando...' : 'Enviar mensagem' }}</button>
+      <app-imagem-envio [imagem]="imagem" [disabled]="carregando" (imagemChange)="imagem = $event" (pendenteChange)="imagemPendente = $event" />
+      <button mat-flat-button class="cta" [disabled]="carregando || imagemPendente || !instancia || !telefone.trim() || (!mensagem.trim() && !imagem)">{{ carregando ? 'Enviando...' : 'Enviar mensagem' }}</button>
     </form>
     <aside class="card side">
       <div class="preview">

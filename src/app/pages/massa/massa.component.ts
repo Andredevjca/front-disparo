@@ -1,5 +1,7 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ImagemEnvio } from '../../models/imagem.model';
+import { ImagemEnvioComponent } from '../../shared/imagem-envio/imagem-envio.component';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,7 +25,7 @@ type Etapa = 'grupos' | 'importar' | 'detalhe' | 'run';
 
 @Component({
   selector: 'app-massa',
-  imports: [
+  imports: [ImagemEnvioComponent,
     CommonModule,
     FormsModule,
     MatButtonModule,
@@ -59,6 +61,8 @@ export class MassaComponent implements OnInit, OnDestroy {
 
   modelos: ModeloMensagem[] = [];
   idModelo: number | null = null;
+  imagem: ImagemEnvio | null = null;
+  imagemPendente = false;
   mensagem = '';
   intervalo = 3000;
   intervaloPersonalizado = 3000;
@@ -160,6 +164,8 @@ export class MassaComponent implements OnInit, OnDestroy {
   }
 
   abrirGrupo(g: GrupoImportacao): void {
+    this.imagem = this.modeloSelecionado()?.imagem || null;
+    this.imagemPendente = false;
     this.grupoSelecionado = g;
     this.pagina = 1;
     this.busca = '';
@@ -220,6 +226,8 @@ export class MassaComponent implements OnInit, OnDestroy {
 
   aoSelecionarModelo(): void {
     this.mensagem = this.modeloSelecionado()?.mensagem || this.mensagem;
+    this.imagem = this.modeloSelecionado()?.imagem || null;
+    this.imagemPendente = false;
   }
 
   visualizarMensagem(): string {
@@ -241,9 +249,11 @@ export class MassaComponent implements OnInit, OnDestroy {
   }
 
   iniciarDisparo(): void {
+    if (this.carregando || this.imagemPendente || !this.instancia || (!this.mensagem.trim() && !this.imagem)) return;
     if (!this.grupoSelecionado) return;
     const intervaloMs = this.intervalo === 0 ? this.intervaloPersonalizado : this.intervalo;
     this.erro = null;
+    this.carregando = true;
     this.servicoMassa
       .iniciar(this.grupoSelecionado.id, {
         idModelo: this.idModelo,
@@ -251,15 +261,17 @@ export class MassaComponent implements OnInit, OnDestroy {
         mensagem: this.mensagem || null,
         intervaloMs: intervaloMs || null,
         instancia: this.instancia,
+        imagem: this.imagem,
       })
       .subscribe({
         next: ({ id }) => {
+          this.carregando = false;
           this.idDisparo = id;
           this.etapa = 'run';
           this.temporizador = setInterval(() => this.atualizarDisparo(), 1500);
           this.atualizarDisparo();
         },
-        error: (err) => (this.erro = err?.error?.message || 'Falha ao iniciar disparo'),
+        error: (err) => { this.carregando = false; this.erro = err?.error?.message || 'Falha ao iniciar disparo'; },
       });
   }
 

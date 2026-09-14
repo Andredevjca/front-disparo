@@ -13,6 +13,8 @@ export class ServicoEnvio {
       telefone: body.telefone,
       nome: body.nome,
       mensagem: body.mensagem,
+      imagem: body.imagem,
+      usarImagemTemplate: false,
       templateId: body.idModelo,
       templateNome: body.nomeModelo,
       instance: body.instancia,

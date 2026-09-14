@@ -252,6 +252,7 @@
         <textarea matInput rows="6" [(ngModel)]="mensagem" placeholder="Use {{ '{{' }}nome{{ '}}' }}, {{ '{{' }}valor{{ '}}' }}, etc"></textarea>
       </mat-form-field>
 
+      <app-imagem-envio class="full" [imagem]="imagem" [disabled]="carregando" (imagemChange)="imagem = $event" (pendenteChange)="imagemPendente = $event" />
       <div class="preview full">
         <strong>Prévia com o primeiro contato válido</strong>
         <pre>{{ visualizarMensagem() }}</pre>
@@ -278,7 +279,7 @@
         <button
           mat-flat-button
           class="cta"
-          [disabled]="!mensagem || detalhe.grupo.validos === 0 || !instancia"
+          [disabled]="carregando || imagemPendente || (!mensagem.trim() && !imagem) || detalhe.grupo.validos === 0 || !instancia"
           (click)="iniciarDisparo()"
         >
           <span class="material-symbols-outlined">send</span>

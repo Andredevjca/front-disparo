@@ -1,4 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { ImagemEnvio } from '../../models/imagem.model';
+import { ImagemEnvioComponent } from '../../shared/imagem-envio/imagem-envio.component';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,7 +15,7 @@ import { ResultadoEnvioUnitario } from '../../models/enviar.model';
 
 @Component({
   selector: 'app-enviar',
-  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [ImagemEnvioComponent, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './enviar.component.html',
   styleUrl: './enviar.component.scss',
 })
@@ -26,6 +28,8 @@ export class EnviarComponent implements OnInit {
   nome = '';
   idModelo: number | null = null;
   instancia = '';
+  imagem: ImagemEnvio | null = null;
+  imagemPendente = false;
   mensagem = '';
   carregando = false;
   resultado: ResultadoEnvioUnitario | null = null;
@@ -47,6 +51,8 @@ export class EnviarComponent implements OnInit {
   aoSelecionarModelo(): void {
     const modelo = this.modelos.find((item) => item.id === this.idModelo);
     this.mensagem = modelo?.mensagem || this.mensagem;
+    this.imagem = modelo?.imagem || null;
+    this.imagemPendente = false;
   }
 
   mensagemFinal(): string {
@@ -54,6 +60,7 @@ export class EnviarComponent implements OnInit {
   }
 
   enviarMensagem(): void {
+    if (this.carregando || this.imagemPendente || !this.instancia || !this.telefone.trim() || (!this.mensagem.trim() && !this.imagem)) return;
     this.carregando = true;
     this.resultado = null;
     const modelo = this.modelos.find((item) => item.id === this.idModelo);
@@ -65,6 +72,7 @@ export class EnviarComponent implements OnInit {
         idModelo: this.idModelo,
         nomeModelo: modelo?.nome,
         instancia: this.instancia,
+        imagem: this.imagem,
       })
       .subscribe({
         next: (resposta) => {

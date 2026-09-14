@@ -1,4 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { ImagemEnvio } from '../../models/imagem.model';
+import { ImagemEnvioComponent } from '../../shared/imagem-envio/imagem-envio.component';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,7 +12,7 @@ import { interpolar } from '../../util/texto.util';
 
 @Component({
   selector: 'app-templates',
-  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [ImagemEnvioComponent, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   templateUrl: './templates.component.html',
   styleUrl: './templates.component.scss',
 })
@@ -19,6 +21,10 @@ export class TemplatesComponent implements OnInit {
   private router = inject(Router);
   modelos: ModeloMensagem[] = [];
   modeloEmEdicao: ModeloMensagem | null = null;
+  imagem: ImagemEnvio | null = null;
+  imagemPendente = false;
+  salvando = false;
+  erro = '';
   nome = '';
   mensagem = 'Olá {{nome}},\n\nIdentificamos uma pendência no valor de R$ {{valor}}.\n\nVencimento: {{vencimento}}.\n\nEntre em contato conosco para mais informações.';
 
@@ -41,13 +47,27 @@ export class TemplatesComponent implements OnInit {
   }
 
   salvarModelo(): void {
-    this.servicoModelos.salvar({ id: this.modeloEmEdicao?.id, nome: this.nome, mensagem: this.mensagem }).subscribe(() => {
-      this.cancelarEdicao();
-      this.carregarModelos();
+    if (this.salvando || this.imagemPendente || !this.nome.trim() || !this.mensagem.trim()) return;
+    this.salvando = true;
+    this.erro = '';
+    this.servicoModelos.salvar({ id: this.modeloEmEdicao?.id, nome: this.nome, mensagem: this.mensagem, imagem: this.imagem }).subscribe({
+      next: () => {
+        this.salvando = false;
+        this.cancelarEdicao();
+        this.carregarModelos();
+      },
+      error: (err) => {
+        this.salvando = false;
+        this.erro = err?.error?.message || 'Não foi possível salvar o template.';
+      }
     });
   }
 
   editarModelo(modelo: ModeloMensagem): void {
+    if (this.salvando) return;
+    this.imagem = modelo.imagem || null;
+    this.imagemPendente = false;
+    this.erro = '';
     this.modeloEmEdicao = modelo;
     this.nome = modelo.nome;
     this.mensagem = modelo.mensagem;
@@ -63,6 +83,10 @@ export class TemplatesComponent implements OnInit {
   }
 
   cancelarEdicao(): void {
+    if (this.salvando) return;
+    this.imagem = null;
+    this.imagemPendente = false;
+    this.erro = '';
     this.modeloEmEdicao = null;
     this.nome = '';
     this.mensagem =

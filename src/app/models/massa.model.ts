@@ -5,5 +5,6 @@ export type RespostaImportacao = { grupo_id: number; total: number; validos: num
 export type DetalheGrupoPaginado = { grupo: GrupoImportacao; contatos: ContatoImportado[]; page: number; perPage: number; total: number; };
 export type Envio = { id: number; tipo: string; template_nome: string | null; intervalo_ms: number | null; total: number; enviados: number; erros: number; pendentes: number; status: string; instancia?: string | null; numero_origem?: string | null; };
 export type DetalheEnvio = { id: number; envio_id: number; nome: string | null; telefone: string; mensagem: string; status: string; erro: string | null; created_at: string; enviado_em: string | null; };
-export type DadosDisparoMassa = { idModelo?: number | null; nomeModelo?: string | null; mensagem?: string | null; intervaloMs?: number | null; instancia?: string; };
+import { ImagemEnvio } from './imagem.model';
+export type DadosDisparoMassa = { imagem?: ImagemEnvio | null; idModelo?: number | null; nomeModelo?: string | null; mensagem?: string | null; intervaloMs?: number | null; instancia?: string; };
 export type RespostaDisparoMassa = { id: number };
